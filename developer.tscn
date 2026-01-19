@@ -1,0 +1,50 @@
+[gd_scene format=3 uid="uid://bksb2sjuff4y5"]
+
+[node name="Developer" type="Control" unique_id=1783918742]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Background" type="Panel" parent="." unique_id=287492775]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Root UI" type="HBoxContainer" parent="." unique_id=1790200652]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Scroll" type="ScrollContainer" parent="Root UI" unique_id=499581680]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 10.0
+
+[node name="Messages" type="VBoxContainer" parent="Root UI/Scroll" unique_id=461532921]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="Control Panel" type="VBoxContainer" parent="Root UI" unique_id=1727647666]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ID Select" type="OptionButton" parent="Root UI/Control Panel" unique_id=1294516445]
+layout_mode = 2
+
+[node name="Build" type="Button" parent="Root UI/Control Panel" unique_id=349824382]
+layout_mode = 2
+text = "Build Context"
+
+[node name="Include Raw" type="CheckBox" parent="Root UI/Control Panel" unique_id=835514549]
+layout_mode = 2
+text = "Include Raw"

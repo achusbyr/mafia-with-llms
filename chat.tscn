@@ -1,0 +1,69 @@
+[gd_scene format=3 uid="uid://c0yxdu4bb272p"]
+
+[ext_resource type="PackedScene" uid="uid://bksb2sjuff4y5" path="res://developer.tscn" id="1_dg5i7"]
+
+[node name="Chat" type="Control" unique_id=1631142927]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="DeveloperWindow" type="Window" parent="." unique_id=1188070350]
+oversampling_override = 1.0
+visible = false
+
+[node name="Developer" parent="DeveloperWindow" unique_id=1783918742 instance=ExtResource("1_dg5i7")]
+
+[node name="Players BG" type="PanelContainer" parent="." unique_id=684901575]
+custom_minimum_size = Vector2(100, 250)
+layout_mode = 1
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Players BG" unique_id=662211033]
+layout_mode = 2
+
+[node name="Msg BG" type="PanelContainer" parent="." unique_id=781730472]
+custom_minimum_size = Vector2(300, 200)
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+grow_vertical = 0
+
+[node name="Scroll" type="ScrollContainer" parent="Msg BG" unique_id=145005910]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 10.0
+
+[node name="Messages" type="VBoxContainer" parent="Msg BG/Scroll" unique_id=653014148]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="Controls BG" type="PanelContainer" parent="." unique_id=802507853]
+custom_minimum_size = Vector2(350, 75)
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 0
+grow_vertical = 0
+
+[node name="Controls" type="HBoxContainer" parent="Controls BG" unique_id=1530565609]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Input" type="TextEdit" parent="Controls BG/Controls" unique_id=1724509930]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 10.0
+placeholder_text = "Input here..."
+wrap_mode = 1
+
+[node name="Send" type="Button" parent="Controls BG/Controls" unique_id=254882677]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Send"

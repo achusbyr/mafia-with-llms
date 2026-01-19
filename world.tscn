@@ -1,0 +1,66 @@
+[gd_scene format=3 uid="uid://bm1l6wgud0lsj"]
+
+[ext_resource type="PackedScene" uid="uid://dbppj6cbn6agu" path="res://models/building.tscn" id="1_f3sb7"]
+[ext_resource type="PackedScene" uid="uid://c0yxdu4bb272p" path="res://chat.tscn" id="1_fj7yv"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_f3sb7"]
+sky_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
+ground_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
+
+[sub_resource type="Sky" id="Sky_fj7yv"]
+sky_material = SubResource("ProceduralSkyMaterial_f3sb7")
+
+[sub_resource type="Environment" id="Environment_tlwt5"]
+background_mode = 2
+sky = SubResource("Sky_fj7yv")
+tonemap_mode = 2
+glow_enabled = true
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_f3sb7"]
+albedo_color = Color(0.46666667, 0.44705883, 0.39607844, 1)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_fj7yv"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_tlwt5"]
+albedo_color = Color(0.54901963, 0.5137255, 0.42352942, 1)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_aqk2v"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_fj7yv"]
+albedo_color = Color(0.59607846, 0.47058824, 0.3254902, 1)
+
+[node name="World" type="Node3D" unique_id=1315527219]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1495742607]
+environment = SubResource("Environment_tlwt5")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=583834202]
+transform = Transform3D(-0.8660254, -0.43301278, 0.25, 0, 0.49999997, 0.86602545, -0.50000006, 0.75, -0.43301266, 0, 0, 0)
+shadow_enabled = true
+
+[node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=852764506]
+
+[node name="Chat" parent="CanvasLayer" unique_id=1631142927 instance=ExtResource("1_fj7yv")]
+
+[node name="Camera3D" type="Camera3D" parent="." unique_id=181756729]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.8654678, 1.6539316, 8.383558)
+
+[node name="Ground" type="MeshInstance3D" parent="." unique_id=1421759328]
+transform = Transform3D(5, 0, 0, 0, 1, 0, 0, 0, 5, 0, 0, 0)
+material_override = SubResource("StandardMaterial3D_f3sb7")
+mesh = SubResource("PlaneMesh_fj7yv")
+
+[node name="Pad" type="MeshInstance3D" parent="." unique_id=36058882]
+transform = Transform3D(3, 0, 0, 0, 0.01, 0, 0, 0, 3, 0, 0, 0)
+material_override = SubResource("StandardMaterial3D_tlwt5")
+mesh = SubResource("CylinderMesh_aqk2v")
+
+[node name="Building" parent="." unique_id=1741530889 instance=ExtResource("1_f3sb7")]
+transform = Transform3D(-8.742278e-08, 0, 2, 0, 2, 0, -2, 0, -8.742278e-08, -2.5, 1, 2.8)
+
+[node name="Building2" parent="." unique_id=1529579174 instance=ExtResource("1_f3sb7")]
+transform = Transform3D(-8.742278e-08, 0, 2, 0, 2, 0, -2, 0, -8.742278e-08, -3.5, 1, 0)
+material_overlay = SubResource("StandardMaterial3D_fj7yv")
+
+[node name="Building3" parent="." unique_id=61135687 instance=ExtResource("1_f3sb7")]
+transform = Transform3D(2.3849761e-08, 0, -2, 0, 3, 0, 2, 0, 2.3849761e-08, 2, 1.5, 3)

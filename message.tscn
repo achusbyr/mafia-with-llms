@@ -1,0 +1,42 @@
+[gd_scene format=3 uid="uid://bkifiaafoc0jm"]
+
+[node name="Message" type="Control" unique_id=808335711]
+custom_minimum_size = Vector2(0, 75)
+layout_mode = 3
+anchors_preset = 10
+anchor_right = 1.0
+grow_horizontal = 2
+size_flags_horizontal = 3
+
+[node name="Background" type="Panel" parent="." unique_id=732394316]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Container" type="HBoxContainer" parent="." unique_id=600480223]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Background" type="PanelContainer" parent="Container" unique_id=212929505]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Sayer" type="Label" parent="Container/Background" unique_id=1700076395]
+custom_minimum_size = Vector2(50, 50)
+layout_mode = 2
+size_flags_vertical = 1
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="Content" type="RichTextLabel" parent="Container" unique_id=1471662222]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 10.0
