@@ -141,7 +141,7 @@ impl Chat {
                     &camera.upcast::<godot::classes::Object>(),
                     "global_rotation",
                     &target_rot.to_variant(),
-                    5.0,
+                    5.0, // TODO: Fix tweening
                 );
             }
         }
