@@ -10,7 +10,7 @@ impl RealActor {
         let prompt = prompt.to_string();
         let (sender, mut receiver) = channel::<RealPromptResult>(1);
         game.command_sender
-            .send(Box::new(move |main| {
+            .send(Box::new(move |chat| {
                 let sender = sender.clone();
                 let message =
                     godot::tools::load::<godot::classes::PackedScene>("res://message.tscn")
@@ -21,9 +21,9 @@ impl RealActor {
                 message
                     .get_node_as::<godot::classes::RichTextLabel>("Container/Content")
                     .set_text(&prompt);
-                main.get_message_list().add_child(&message);
-                let send = main.get_send_button();
-                let mut input = main.get_input_box();
+                chat.get_message_list().add_child(&message);
+                let send = chat.get_send_button();
+                let mut input = chat.get_input_box();
                 godot::task::spawn(async move {
                     send.signals().pressed().to_future().await;
                     let text = input.get_text();
@@ -58,15 +58,12 @@ impl RealActor {
             Some(Action::Abstain)
         } else if let Some(rest) = line.strip_prefix("!tag ") {
             let id = rest.trim().parse::<u8>().ok()?;
-            Some(Action::TagPlayerForComment { id })
+            Some(Action::TagPlayerForComment(id))
         } else if let Some(rest) = line.strip_prefix("!whisper ") {
             let parts: Vec<&str> = rest.splitn(2, ' ').collect();
             if parts.len() == 2 {
                 let id = parts[0].parse::<u8>().ok()?;
-                Some(Action::Whisper {
-                    to: id,
-                    message: parts[1].to_string(),
-                })
+                Some(Action::Whisper(id, parts[1].to_string()))
             } else {
                 None
             }

@@ -2,6 +2,7 @@ use crate::actor::BaseActor;
 use crate::context_entry::{ContextEntry, SayerType};
 use crate::data::channel::Channel;
 use crate::data::extra_data::ExtraData;
+use crate::data::roles::RoleAlignment;
 use crate::game::{ACTOR_COUNT, EXTRA_MESSAGES, Game};
 use crate::llm::tools::Tool;
 use crate::prompts::general::{actor_was_killed, day_time, night_time, voting_begins, voting_ends};
@@ -36,6 +37,22 @@ impl Game {
         self.refresh_actor_list();
         for actor in Self::get_actors_mut() {
             actor.extra_data.clear();
+        }
+        let actors = Self::get_nondead_actors();
+        let townies = actors
+            .iter()
+            .filter(|actor| !matches!(actor.role.alignment(), RoleAlignment::Mafia))
+            .collect::<Vec<_>>();
+        let mafias = actors
+            .iter()
+            .filter(|actor| matches!(actor.role.alignment(), RoleAlignment::Mafia))
+            .collect::<Vec<_>>();
+        if townies.len() == mafias.len() {
+            self.end_result = Some(crate::game::EndResult::Mafia);
+            return;
+        } else if mafias.is_empty() {
+            self.end_result = Some(crate::game::EndResult::Town);
+            return;
         }
         if self.day_night_count.is_night {
             self.iterate_night().await;

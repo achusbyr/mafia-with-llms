@@ -71,10 +71,13 @@ pub fn night_time(night_count: u8) -> String {
     }
 }
 
-pub fn your_turn_to_talk(core_messages: u8, extra_messages: u8) -> String {
+pub fn your_turn_to_talk(actor: &BaseActor, core_messages: u8, extra_messages: u8) -> String {
     format!(
-        "It's now your turn to talk. There are currently {} core messages and {} extra messages.",
-        core_messages, extra_messages
+        "It's now your turn to talk. There are currently {} core messages and {} extra messages. Remember: you are {}, a {}.",
+        core_messages,
+        extra_messages,
+        actor.name,
+        actor.role.name()
     )
 }
 
@@ -106,13 +109,13 @@ pub fn actor_voted(
 pub fn voting_ends(actor: Option<&BaseActor>, reveal_role: bool) -> String {
     if let Some(actor) = actor {
         if reveal_role {
-            format!("Voting has ended. {} received the most votes.", actor.name)
-        } else {
             format!(
                 "Voting has ended. {} received the most votes. They were a {}.",
                 actor.name,
                 actor.role.name()
             )
+        } else {
+            format!("Voting has ended. {} received the most votes.", actor.name)
         }
     } else {
         "Voting has ended. Nobody in particular received the most votes.".to_string()

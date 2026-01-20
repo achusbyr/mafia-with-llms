@@ -14,9 +14,13 @@ use godot::obj::{NewAlloc, WithBaseField};
 use rand::seq::SliceRandom;
 
 impl Game {
-    pub fn init_actors(&mut self) {
+    pub fn before_init(&self) {
         #[cfg(feature = "development")]
         self.setup_developer_window();
+        self.setup_menu();
+    }
+
+    pub fn init_actors(&mut self) {
         let actor = BaseActor {
             dead: false,
             name: "Player".to_string(),
@@ -126,8 +130,8 @@ impl Game {
             .map(|actor| (actor.name.clone(), actor.id))
             .collect::<Vec<_>>();
         self.command_sender
-            .send(Box::new(move |main| {
-                let mut actor_list = main.get_actor_list();
+            .send(Box::new(move |chat| {
+                let mut actor_list = chat.get_actor_list();
                 for mut existing in actor_list.get_children().iter_shared() {
                     existing.queue_free()
                 }
@@ -140,7 +144,7 @@ impl Game {
             .unwrap();
     }
 
-    pub fn refresh_context_for_actor(&self, id: u8) {
+    pub fn refresh_context_with_actor(&self, id: u8) {
         let actors = Self::get_actors()
             .iter()
             .map(|actor| (actor.name.clone(), actor.id))
@@ -151,8 +155,8 @@ impl Game {
             .filter(|entry| entry.available_for_actor(Self::get_actor_from_id(id).unwrap(), false))
             .collect::<Vec<_>>();
         self.command_sender
-            .send(Box::new(move |main| {
-                let mut messages = main.get_message_list();
+            .send(Box::new(move |chat| {
+                let mut messages = chat.get_message_list();
                 for mut existing in messages.get_children().iter_shared() {
                     existing.queue_free();
                 }
@@ -178,18 +182,61 @@ impl Game {
                         .set_text(&entry.content);
                     messages.add_child(&message);
                 }
+                let last_entry = context.last().unwrap();
+                match last_entry.sayer_type {
+                    SayerType::Actor(id) => {}
+                    SayerType::System => {}
+                }
             }))
             .unwrap();
     }
 
+    fn setup_menu(&self) {
+        self.command_sender
+            .send(Box::new(|chat| {
+                let menu_button = chat.get_menu_button();
+                let mut menu = chat.get_menu();
+                let save =
+                    menu.get_node_as::<godot::classes::Button>("Background/Margin/Container/Save");
+                let load =
+                    menu.get_node_as::<godot::classes::Button>("Background/Margin/Container/Load");
+                let pause =
+                    menu.get_node_as::<godot::classes::Button>("Background/Margin/Container/Pause");
+                let close =
+                    menu.get_node_as::<godot::classes::Button>("Background/Margin/Container/Close");
+                pause.signals().pressed().connect_self(|button| {
+                    // Chat/Menu/Background/Margin/Container/Pause
+                    let chat = button.get_node_as::<crate::chat::Chat>("../../../../..");
+                    match button.get_text().to_string().as_str() {
+                        "Pause" => {
+                            button.set_text("Unpause");
+                        }
+                        "Unpause" => {
+                            button.set_text("Pause");
+                        }
+                        _ => {
+                            godot::global::godot_error!("Invalid pause button text!");
+                        }
+                    }
+                });
+                close.signals().pressed().connect(move || {
+                    menu.hide();
+                });
+                let mut menu = chat.get_menu();
+                menu_button.signals().pressed().connect(move || {
+                    menu.show();
+                });
+            }))
+            .unwrap();
+    }
+
+    #[cfg(feature = "development")]
     fn setup_developer_window(&self) {
         self.command_sender
-            .send(Box::new(|main| {
-                let mut viewport = main.base().get_viewport().unwrap();
+            .send(Box::new(|chat| {
+                let mut viewport = chat.base().get_viewport().unwrap();
                 viewport.set_embedding_subwindows(false);
-                let mut developer_window = main
-                    .base()
-                    .get_node_as::<godot::classes::Window>("DeveloperWindow");
+                let mut developer_window = chat.get_development_window();
                 developer_window
                     .signals()
                     .close_requested()

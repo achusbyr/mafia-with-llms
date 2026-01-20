@@ -2,8 +2,7 @@
 
 [ext_resource type="PackedScene" uid="uid://bksb2sjuff4y5" path="res://developer.tscn" id="1_ig7tw"]
 
-[node name="Main" type="Main" unique_id=13331818]
-api_key = ""
+[node name="Main" type="Main" unique_id=1538466559]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0

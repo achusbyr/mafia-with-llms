@@ -1,30 +1,36 @@
 [gd_scene format=3 uid="uid://c0yxdu4bb272p"]
 
 [ext_resource type="PackedScene" uid="uid://bksb2sjuff4y5" path="res://developer.tscn" id="1_dg5i7"]
+[ext_resource type="PackedScene" uid="uid://blhkc263mfevu" path="res://menu.tscn" id="2_yj8al"]
 
-[node name="Chat" type="Control" unique_id=1631142927]
-layout_mode = 3
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_yj8al"]
+draw_center = false
+
+[node name="Chat" type="Chat" unique_id=448122060]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="DeveloperWindow" type="Window" parent="." unique_id=1188070350]
+[node name="Developer Window" type="Window" parent="." unique_id=1188070350]
 oversampling_override = 1.0
 visible = false
 
-[node name="Developer" parent="DeveloperWindow" unique_id=1783918742 instance=ExtResource("1_dg5i7")]
+[node name="Developer" parent="Developer Window" unique_id=1783918742 instance=ExtResource("1_dg5i7")]
 
-[node name="Players BG" type="PanelContainer" parent="." unique_id=684901575]
-custom_minimum_size = Vector2(100, 250)
+[node name="Actors BG" type="PanelContainer" parent="." unique_id=684901575]
+custom_minimum_size = Vector2(125, 350)
 layout_mode = 1
 
-[node name="VBoxContainer" type="VBoxContainer" parent="Players BG" unique_id=662211033]
+[node name="Scroll" type="ScrollContainer" parent="Actors BG" unique_id=1836541193]
+layout_mode = 2
+
+[node name="Actors" type="VBoxContainer" parent="Actors BG/Scroll" unique_id=662211033]
 layout_mode = 2
 
 [node name="Msg BG" type="PanelContainer" parent="." unique_id=781730472]
-custom_minimum_size = Vector2(300, 200)
+custom_minimum_size = Vector2(600, 400)
 layout_mode = 1
 anchors_preset = 2
 anchor_top = 1.0
@@ -42,7 +48,7 @@ size_flags_horizontal = 3
 size_flags_vertical = 3
 
 [node name="Controls BG" type="PanelContainer" parent="." unique_id=802507853]
-custom_minimum_size = Vector2(350, 75)
+custom_minimum_size = Vector2(500, 125)
 layout_mode = 1
 anchors_preset = 3
 anchor_left = 1.0
@@ -59,7 +65,7 @@ size_flags_vertical = 3
 [node name="Input" type="TextEdit" parent="Controls BG/Controls" unique_id=1724509930]
 layout_mode = 2
 size_flags_horizontal = 3
-size_flags_stretch_ratio = 10.0
+size_flags_stretch_ratio = 5.0
 placeholder_text = "Input here..."
 wrap_mode = 1
 
@@ -67,3 +73,38 @@ wrap_mode = 1
 layout_mode = 2
 size_flags_horizontal = 3
 text = "Send"
+
+[node name="Text BG" type="PanelContainer" parent="." unique_id=1691780090]
+custom_minimum_size = Vector2(500, 0)
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_top = 150.0
+offset_bottom = 300.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_yj8al")
+
+[node name="Current Text" type="Label" parent="Text BG" unique_id=1438756948]
+custom_minimum_size = Vector2(10, 10)
+layout_mode = 2
+size_flags_vertical = 1
+autowrap_mode = 3
+
+[node name="MenuButton" type="Button" parent="." unique_id=1603534960]
+custom_minimum_size = Vector2(100, 50)
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -8.0
+offset_bottom = 8.0
+grow_horizontal = 0
+text = "Menu"
+
+[node name="Menu" parent="." unique_id=1414415964 instance=ExtResource("2_yj8al")]
+visible = false
+layout_mode = 1

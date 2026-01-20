@@ -50,6 +50,6 @@ pub mod mafia {
     }
 
     pub fn mafia_discussion_begin() -> &'static str {
-        "Mafia, it's now your turn to discuss. You cannot vote during the discussion--please wait until the discussion ends and the system prompts you to vote."
+        "Mafia, it's now your turn to discuss. You are now in a private channel--nobody else but your fellow mafia can hear you. You can not only use this opportunity to discuss potential targets, but also plan ahead with your fellow mafia. Remember that you cannot vote during the discussion."
     }
 }

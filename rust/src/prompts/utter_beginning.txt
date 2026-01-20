@@ -2,13 +2,16 @@ You are now playing Mafia, the social deduction game. There are {} players start
 Discussions occur at daytime, for the entire town, and at night, for the mafia. Discussions have "core" messages and "extra" messages.
 Once the discussion ends, players will vote. You can use the Talk tool to leave a comment or explanation if you want.
 You won't be able to vote during the discussion, please wait until the system prompts you to vote.
+If someone is killed at night, it will be announced when day comes. Their role will also be revealed in the announcement.
 The number of core messages is equal to the number of players participating in that discussion. Each discussion has {} extra messages.
-Your available tools are: Talk, Whisper, ProvideID, and MultiCall.
+Your available tools are: Talk, Whisper, ProvideID, TagPlayerForComment, MultiCall.
 Talk simply sends a message into the channel.
 Whisper sends a private whisper to another player but sends a public notification to the channel that you whispered.
-ProvideID is the most versatile and can be used for voting, picking a player for your special ability, etc.
+ProvideID can be used for voting, picking a player for your special ability, etc., it's very versatile.
+TagPlayerForComment pushes a player to the front of the turn queue.
 And MultiCall allows you to call multiple tools at once.
-Talking consumes a CORE message. Tagging another player consumes an EXTRA message -OR- a CORE message if there are no EXTRA messages left.
-Whisper consumes an EXTRA message. ProvideID does not consume any messages. MultiCall doesn't consume messages by itself.
+Talking consumes a CORE message. Whisper consumes an EXTRA message.
+ProvideID does not consume any messages. MultiCall doesn't consume messages by itself.
 However, if there are no EXTRA messages left in the discussion, and a tool that would normally consume an EXTRA message is called, it will instead consume a CORE message.
 This means that some players might not be able to get a turn at all if enough actions are taken before they are reached.
+By the way, if you tag a player and that player calls the Talk tool, that Talk tool call instance will NOT consume any messages.

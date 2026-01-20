@@ -16,7 +16,6 @@ pub type MainCommand = Box<dyn FnMut(&mut Main) + Send>;
 #[derive(GodotClass)]
 #[class(base = Control)]
 pub struct Main {
-    #[export]
     api_key: GString,
     game_iteration: Option<JoinHandle<()>>,
     game: Arc<Mutex<Game>>,
@@ -62,6 +61,7 @@ impl IControl for Main {
                             extra_data: vec![ExtraData::SaidInChannel(Channel::Global)],
                         });
                         game.refresh_context_for_actor(0);
+                        // TODO: Post game talk
                         loop {
                             tokio::time::sleep(std::time::Duration::from_secs(1)).await;
                         }
@@ -72,6 +72,26 @@ impl IControl for Main {
     }
 
     fn enter_tree(&mut self) {
+        let api_key_file = godot::classes::FileAccess::open(
+            "res://API_KEY.txt",
+            godot::classes::file_access::ModeFlags::READ,
+        );
+        if let Some(file) = api_key_file
+            && let text = file.get_as_text()
+            && !text.is_empty()
+        {
+            self.api_key = text.to_string().trim().to_godot();
+        } else {
+            match input_dialogs::Input::new("Enter your API key for the API (OpenRouter/etc.)")
+                .show()
+            {
+                Ok(api_key) => self.api_key = api_key.unwrap().to_godot(),
+                Err(err) => {
+                    godot::global::godot_print!("Error: {}", err);
+                    self.base().get_tree().unwrap().quit();
+                }
+            }
+        }
         crate::llm::ai_interface::CLIENT.get_or_init(|| {
             Client::with_config(
                 OpenAIConfig::default()

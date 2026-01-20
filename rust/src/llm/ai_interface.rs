@@ -63,7 +63,6 @@ impl AIInterface {
                 }
                 context_entry.content = context_entry.content.trim().to_string();
                 if context_entry.content != "NONE" {
-                    godot::global::godot_print!("{}", context_entry.content);
                     Game::get_context_mut().push(context_entry);
                 }
             }
@@ -99,17 +98,14 @@ fn handle_tool_call(tool_call: (&str, String), collected_actions: &mut Vec<Actio
         "Abstain" => collected_actions.push(Action::Abstain),
         "Whisper" => {
             let whisper = serde_json::from_str::<Whisper>(&tool_call.1).unwrap();
-            collected_actions.push(Action::Whisper {
-                to: whisper.to,
-                message: whisper.message,
-            });
+            collected_actions.push(Action::Whisper(whisper.to, whisper.message));
         }
         "TagPlayerForComment" => {
-            collected_actions.push(Action::TagPlayerForComment {
-                id: serde_json::from_str::<TagPlayerForComment>(&tool_call.1)
+            collected_actions.push(Action::TagPlayerForComment(
+                serde_json::from_str::<TagPlayerForComment>(&tool_call.1)
                     .unwrap()
                     .id,
-            });
+            ));
         }
         "ProvideID" => collected_actions.push(Action::ProvideID(
             serde_json::from_str::<ProvideID>(&tool_call.1).unwrap().id,

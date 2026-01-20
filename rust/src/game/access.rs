@@ -22,7 +22,7 @@ impl Game {
 
     pub fn add_to_context(&mut self, entry: ContextEntry) {
         Self::get_context_mut().push(entry);
-        self.refresh_context_for_actor(0);
+        self.refresh_context_with_actor(0);
     }
 
     pub fn get_nondead_actors() -> Vec<&'static BaseActor> {

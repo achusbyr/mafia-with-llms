@@ -10,9 +10,14 @@ config_version=5
 
 [application]
 
-config/name="mafia-rust"
-run/main_scene="uid://ldohn4xvdfr8"
+config/name="mafia-with-llms"
+run/main_scene="uid://bm1l6wgud0lsj"
 config/features=PackedStringArray("4.6", "Forward Plus")
+
+[display]
+
+window/size/viewport_width=1920
+window/size/viewport_height=1080
 
 [physics]
 
