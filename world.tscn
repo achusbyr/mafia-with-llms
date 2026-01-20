@@ -40,18 +40,18 @@ shadow_enabled = true
 
 [node name="UI" type="CanvasLayer" parent="." unique_id=852764506]
 
-[node name="Chat" parent="UI" unique_id=1631142927 node_paths=PackedStringArray("camera") instance=ExtResource("1_fj7yv")]
-camera = NodePath("../../Camera3D")
+[node name="Chat" parent="UI" unique_id=1631142927 instance=ExtResource("1_fj7yv")]
 
 [node name="Camera3D" type="Camera3D" parent="." unique_id=181756729]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 0)
 
 [node name="Ground" type="MeshInstance3D" parent="." unique_id=1421759328]
-transform = Transform3D(5, 0, 0, 0, 1, 0, 0, 0, 5, 0, 0, 0)
+transform = Transform3D(7, 0, 0, 0, 1, 0, 0, 0, 7, 0, 0, 0)
 material_override = SubResource("StandardMaterial3D_f3sb7")
 mesh = SubResource("PlaneMesh_fj7yv")
 
 [node name="Town Center" type="MeshInstance3D" parent="." unique_id=36058882]
-transform = Transform3D(3, 0, 0, 0, 0.01, 0, 0, 0, 3, 0, 0, 0)
+transform = Transform3D(4, 0, 0, 0, 0.01, 0, 0, 0, 4, 0, 0, 0)
 material_override = SubResource("StandardMaterial3D_tlwt5")
 mesh = SubResource("CylinderMesh_aqk2v")
 

@@ -1,4 +1,5 @@
 You are now playing Mafia, the social deduction game. There are {} players starting from 0.
+Players normally can't see each other's roles, unless for special roles, such as mafia knowing their fellow mafia, etc.
 Discussions occur at daytime, for the entire town, and at night, for the mafia. Discussions have "core" messages and "extra" messages.
 Once the discussion ends, players will vote. You can use the Talk tool to leave a comment or explanation if you want.
 You won't be able to vote during the discussion, please wait until the system prompts you to vote.

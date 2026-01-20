@@ -9,16 +9,17 @@ use std::collections::HashMap;
 
 impl Game {
     pub async fn handle_voting(
+        &mut self,
         actors: &[&BaseActor],
         extra_data: &[ExtraData],
-        game: &mut Game,
     ) -> Option<u8> {
         let mut votes = Vec::new();
         for actor in actors {
+            self.check_pause().await;
             let pick = actor
                 .prompt(
                     time_to_vote(),
-                    game,
+                    self,
                     &[
                         crate::llm::tools::Abstain::make_tool(),
                         crate::llm::tools::Talk::make_tool(),
@@ -46,7 +47,7 @@ impl Game {
                 }
                 _ => {}
             }
-            game.add_to_context(ContextEntry {
+            self.add_to_context(ContextEntry {
                 content: actor_voted(actor, target_vote, comment),
                 sayer_type: SayerType::System,
                 extra_data: extra_data.to_vec(),

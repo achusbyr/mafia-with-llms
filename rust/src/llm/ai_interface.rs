@@ -114,7 +114,13 @@ fn handle_tool_call(tool_call: (&str, String), collected_actions: &mut Vec<Actio
             serde_json::from_str::<Talk>(&tool_call.1).unwrap().message,
         )),
         "MultiCall" => {
-            let multi_call = serde_json::from_str::<MultiCall>(&tool_call.1).unwrap();
+            let multi_call = match serde_json::from_str::<MultiCall>(&tool_call.1) {
+                Ok(multi_call) => multi_call,
+                Err(err) => {
+                    godot::global::godot_warn!("Failed to parse MultiCall: {}", err);
+                    return;
+                }
+            };
             for action in &multi_call.actions {
                 handle_tool_call(
                     (&action.tool, action.arguments.to_string()),

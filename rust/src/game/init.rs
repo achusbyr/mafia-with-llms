@@ -1,6 +1,9 @@
+use std::sync::atomic::Ordering;
+
 use crate::actor::llm_actor::LlmActor;
 use crate::actor::real_actor::RealActor;
 use crate::actor::{ActorKind, BaseActor};
+use crate::chat::Chat;
 use crate::context_entry::{ContextEntry, SayerType};
 use crate::data::channel::Channel;
 use crate::data::extra_data::ExtraData;
@@ -20,7 +23,7 @@ impl Game {
         self.setup_menu();
     }
 
-    pub fn init_actors(&mut self) {
+    pub fn init_actors(&mut self, chat: &mut Chat) {
         let actor = BaseActor {
             dead: false,
             name: "Player".to_string(),
@@ -62,6 +65,7 @@ impl Game {
             Self::get_actors_mut()[index].role = role.clone();
         }
         Self::get_actors_mut().sort_by(|a, b| a.id.cmp(&b.id));
+        chat.spawn_visuals(Self::get_actors());
         for actor in Self::get_actors() {
             let mut output = format!(
                 "Init {} for {} (ID {})",
@@ -144,7 +148,7 @@ impl Game {
             .unwrap();
     }
 
-    pub fn refresh_context_with_actor(&self, id: u8) {
+    pub fn refresh_context_with_actor(&self) {
         let actors = Self::get_actors()
             .iter()
             .map(|actor| (actor.name.clone(), actor.id))
@@ -152,7 +156,7 @@ impl Game {
         let context = Self::get_context()
             .clone()
             .into_iter()
-            .filter(|entry| entry.available_for_actor(Self::get_actor_from_id(id).unwrap(), false))
+            .filter(|entry| entry.available_for_actor(Self::get_actor_from_id(0).unwrap(), false))
             .collect::<Vec<_>>();
         self.command_sender
             .send(Box::new(move |chat| {
@@ -182,11 +186,6 @@ impl Game {
                         .set_text(&entry.content);
                     messages.add_child(&message);
                 }
-                let last_entry = context.last().unwrap();
-                match last_entry.sayer_type {
-                    SayerType::Actor(id) => {}
-                    SayerType::System => {}
-                }
             }))
             .unwrap();
     }
@@ -194,6 +193,13 @@ impl Game {
     fn setup_menu(&self) {
         self.command_sender
             .send(Box::new(|chat| {
+                chat.base()
+                    .get_node_as::<godot::classes::Window>("Messages Window")
+                    .signals()
+                    .close_requested()
+                    .connect_self(|window| {
+                        window.hide();
+                    });
                 let menu_button = chat.get_menu_button();
                 let mut menu = chat.get_menu();
                 let save =
@@ -204,9 +210,27 @@ impl Game {
                     menu.get_node_as::<godot::classes::Button>("Background/Margin/Container/Pause");
                 let close =
                     menu.get_node_as::<godot::classes::Button>("Background/Margin/Container/Close");
-                pause.signals().pressed().connect_self(|button| {
-                    // Chat/Menu/Background/Margin/Container/Pause
+                let open_messages = menu.get_node_as::<godot::classes::Button>(
+                    "Background/Margin/Container/Open Messages",
+                );
+                let developer_window = menu.get_node_as::<godot::classes::Button>(
+                    "Background/Margin/Container/Developer Window",
+                );
+                open_messages.signals().pressed().connect_self(|button| {
                     let chat = button.get_node_as::<crate::chat::Chat>("../../../../..");
+                    chat.get_node_as::<godot::classes::Window>("Messages Window")
+                        .show();
+                });
+                developer_window.signals().pressed().connect_self(|button| {
+                    let chat = button.get_node_as::<crate::chat::Chat>("../../../../..");
+                    chat.get_node_as::<godot::classes::Window>("Developer Window")
+                        .show();
+                });
+                pause.signals().pressed().connect_self(|button| {
+                    let chat = button.get_node_as::<crate::chat::Chat>("../../../../..");
+                    let paused = chat.bind().paused.clone();
+                    let val = paused.load(Ordering::Relaxed);
+                    paused.store(!val, Ordering::Relaxed);
                     match button.get_text().to_string().as_str() {
                         "Pause" => {
                             button.set_text("Unpause");
@@ -234,8 +258,11 @@ impl Game {
     fn setup_developer_window(&self) {
         self.command_sender
             .send(Box::new(|chat| {
-                let mut viewport = chat.base().get_viewport().unwrap();
-                viewport.set_embedding_subwindows(false);
+                chat.get_menu()
+                    .get_node_as::<godot::classes::Button>(
+                        "Background/Margin/Container/Developer Window",
+                    )
+                    .show();
                 let mut developer_window = chat.get_development_window();
                 developer_window
                     .signals()
@@ -243,8 +270,6 @@ impl Game {
                     .connect_self(|window| {
                         window.hide();
                     });
-                developer_window.set_title("Developer Window");
-                developer_window.set_size(viewport.get_visible_rect().size.cast_int());
                 developer_window.set_visible(true);
                 let developer =
                     developer_window.get_node_as::<godot::classes::Control>("Developer");

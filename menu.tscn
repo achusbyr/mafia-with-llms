@@ -37,6 +37,11 @@ layout_mode = 2
 layout_mode = 2
 text = "Pause"
 
+[node name="Open Messages" type="Button" parent="Background/Margin/Container" unique_id=1918741889]
+layout_mode = 2
+text = "Open Messages
+"
+
 [node name="Save" type="Button" parent="Background/Margin/Container" unique_id=2076078421]
 layout_mode = 2
 text = "Save"
@@ -48,3 +53,9 @@ text = "Load"
 [node name="Close" type="Button" parent="Background/Margin/Container" unique_id=1987012358]
 layout_mode = 2
 text = "Close"
+
+[node name="Developer Window" type="Button" parent="Background/Margin/Container" unique_id=401804656]
+visible = false
+layout_mode = 2
+text = "Developer Window
+"

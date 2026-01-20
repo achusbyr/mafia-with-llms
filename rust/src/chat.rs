@@ -6,13 +6,14 @@ use crate::game::Game;
 use async_openai::Client;
 use async_openai::config::OpenAIConfig;
 use godot::classes::{
-    AnimatableBody3D, Button, Camera3D, Control, IControl, Label, MeshInstance3D, TextEdit,
-    VBoxContainer, Window,
+    AnimatableBody3D, Button, Camera3D, Control, IControl, Label, Label3D, MeshInstance3D,
+    TextEdit, VBoxContainer, Window,
 };
 use godot::prelude::*;
 use std::collections::HashMap;
 use std::f64;
 use std::sync::Arc;
+use std::sync::atomic::AtomicBool;
 use std::sync::mpsc::{Receiver, channel};
 use tokio::sync::Mutex;
 use tokio::task::JoinHandle;
@@ -22,10 +23,10 @@ pub type ChatCommand = Box<dyn FnMut(&mut Chat) + Send>;
 #[derive(GodotClass)]
 #[class(base = Control)]
 pub struct Chat {
-    #[export]
-    pub camera: OnEditor<Gd<Camera3D>>,
+    pub camera: Option<Gd<Camera3D>>,
     pub command_receiver: Receiver<ChatCommand>,
     pub player_nodes: HashMap<u8, Gd<AnimatableBody3D>>,
+    pub paused: Arc<AtomicBool>,
     game_iteration: Option<JoinHandle<()>>,
     game: Arc<Mutex<Game>>,
     api_key: GString,
@@ -36,12 +37,15 @@ pub struct Chat {
 impl IControl for Chat {
     fn init(base: Base<Self::Base>) -> Self {
         let channel = channel::<ChatCommand>();
+        let paused = Arc::from(AtomicBool::new(false));
+        let paused_clone = Arc::clone(&paused);
         Self {
-            camera: OnEditor::default(),
+            camera: None,
             command_receiver: channel.1,
             player_nodes: HashMap::new(),
+            paused,
             game_iteration: None,
-            game: Arc::from(Mutex::from(Game::new(channel.0))),
+            game: Arc::from(Mutex::from(Game::new(channel.0, paused_clone))),
             api_key: GString::new(),
             base,
         }
@@ -71,7 +75,7 @@ impl IControl for Chat {
                             sayer_type: crate::context_entry::SayerType::System,
                             extra_data: vec![ExtraData::SaidInChannel(Channel::Global)],
                         });
-                        game.refresh_context_with_actor(0);
+                        game.refresh_context_with_actor();
                         // TODO: Post game talk
                         loop {
                             tokio::time::sleep(std::time::Duration::from_secs(1)).await;
@@ -113,6 +117,10 @@ impl IControl for Chat {
     }
 
     fn ready(&mut self) {
+        self.camera = Some(
+            self.get_world()
+                .get_node_as::<godot::classes::Camera3D>("Camera3D"),
+        );
         let game = Arc::clone(&self.game);
         crate::tokio::AsyncRuntime::singleton()
             .bind()
@@ -120,14 +128,33 @@ impl IControl for Chat {
             .block_on(async {
                 let mut game = game.lock().await;
                 game.before_init();
-                game.init_actors();
-                game.init_context(true);
+                game.init_actors(self);
+                game.init_context(false);
             });
     }
 }
 
 impl Chat {
-    fn spawn_visuals(&mut self, actors: &[BaseActor]) {
+    pub fn focus_camera_on_actor(&mut self, actor_id: u8, is_night: bool) {
+        if is_night {
+        } else if let Some(target_node) = self.player_nodes.get(&actor_id) {
+            let target_pos = target_node.get_global_position();
+            let camera = self.camera.clone().unwrap();
+            if let Some(mut tween) = self.base_mut().create_tween() {
+                let mut temp_cam = camera.clone();
+                temp_cam.look_at(target_pos);
+                let target_rot = temp_cam.get_global_rotation();
+                tween.tween_property(
+                    &camera.upcast::<godot::classes::Object>(),
+                    "global_rotation",
+                    &target_rot.to_variant(),
+                    5.0,
+                );
+            }
+        }
+    }
+
+    pub fn spawn_visuals(&mut self, actors: &[BaseActor]) {
         let town_center_pos = self.get_town_center().get_global_position();
         let count = actors.len() as f64;
         let radius = 2.0;
@@ -138,43 +165,36 @@ impl Chat {
             let angle = 2.0 * f64::consts::PI / count * (index as f64);
             let offset = Vector3::FORWARD.rotated(Vector3::UP, angle as real) * radius;
             let final_pos = town_center_pos + offset;
-            instance.set_global_position(final_pos);
-            instance.look_at(town_center_pos);
 
-            // Set Name/Text (Assuming your player scene has a method or Label)
-            // You might need to expose a set_text method on the GDScript attached to the player scene
-            // or get the node manually:
-            // instance.get_node_as::<Label>("NameLabel").set_text(&actor.name);
+            self.get_world()
+                .call_deferred("add_child", &[instance.clone().to_variant()]);
 
-            self.base_mut()
-                .add_child(&instance.clone().upcast::<Node>());
+            instance.look_at_from_position(final_pos, town_center_pos);
+            instance.translate_object_local(Vector3 {
+                x: 0.0,
+                y: 0.75,
+                z: 0.0,
+            }); // Slightly above ground
+            instance.rotate_object_local(Vector3::UP, std::f64::consts::PI as real); // Spin 180
+            instance
+                .get_node_as::<Label3D>("Name")
+                .set_text(&actor.name);
+            instance
+                .get_node_as::<Label3D>("Role")
+                .set_text(&actor.role.name());
 
             self.player_nodes.insert(actor.id, instance);
-
-            /*if matches!(actor.role, crate::data::roles::GameRole::Mafioso) {
-                 let mut clone = self.player_scene.instantiate_as::<Node3D>();
-                 // Position relative to mafia spawn...
-                 let mafia_pos = self.mafia_spawn.get_global_position();
-                 // Simple offset logic for clones
-                 let clone_offset = Vector3::new(i as real * 1.0, 0.0, 0.0);
-                 clone.set_global_position(mafia_pos + clone_offset);
-                 self.base_mut().add_child(clone.upcast());
-            }*/
         }
     }
 
-    fn get_world(&self) -> Gd<Node3D> {
-        self.base().get_node_as::<Node3D>("..")
-    }
-
-    pub fn get_town_center(&self) -> Gd<MeshInstance3D> {
-        self.get_world()
-            .get_node_as::<MeshInstance3D>("Town Center")
+    #[cfg(feature = "development")]
+    pub fn get_development_window(&self) -> Gd<Window> {
+        self.base().get_node_as::<Window>("Developer Window")
     }
 
     pub fn get_message_list(&self) -> Gd<VBoxContainer> {
         self.base()
-            .get_node_as::<VBoxContainer>("Msg BG/Scroll/Messages")
+            .get_node_as::<VBoxContainer>("Messages Window/Msg BG/Scroll/Messages")
     }
 
     pub fn get_actor_list(&self) -> Gd<VBoxContainer> {
@@ -204,8 +224,12 @@ impl Chat {
         self.base().get_node_as::<Label>("Text BG/Current Text")
     }
 
-    #[cfg(feature = "development")]
-    pub fn get_development_window(&self) -> Gd<Window> {
-        self.base().get_node_as::<Window>("Developer Window")
+    pub fn get_town_center(&self) -> Gd<MeshInstance3D> {
+        self.get_world()
+            .get_node_as::<MeshInstance3D>("Town Center")
+    }
+
+    fn get_world(&self) -> Gd<Node3D> {
+        self.base().get_node_as::<Node3D>("../..")
     }
 }

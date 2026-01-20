@@ -2,7 +2,6 @@ use crate::actor::BaseActor;
 use crate::context_entry::{ContextEntry, SayerType};
 use crate::data::channel::Channel;
 use crate::data::extra_data::ExtraData;
-use crate::data::roles::RoleAlignment;
 use crate::game::{ACTOR_COUNT, EXTRA_MESSAGES, Game};
 use crate::llm::tools::Tool;
 use crate::prompts::general::{actor_was_killed, day_time, night_time, voting_begins, voting_ends};
@@ -11,6 +10,7 @@ use crate::prompts::specific::mafia::mafia_discussion_begin;
 
 impl Game {
     pub async fn iterate(&mut self) {
+        self.check_pause().await;
         if self.day_night_count.is_night {
             self.add_to_context(ContextEntry {
                 content: night_time(self.day_night_count.night_count),
@@ -38,20 +38,8 @@ impl Game {
         for actor in Self::get_actors_mut() {
             actor.extra_data.clear();
         }
-        let actors = Self::get_nondead_actors();
-        let townies = actors
-            .iter()
-            .filter(|actor| !matches!(actor.role.alignment(), RoleAlignment::Mafia))
-            .collect::<Vec<_>>();
-        let mafias = actors
-            .iter()
-            .filter(|actor| matches!(actor.role.alignment(), RoleAlignment::Mafia))
-            .collect::<Vec<_>>();
-        if townies.len() == mafias.len() {
-            self.end_result = Some(crate::game::EndResult::Mafia);
-            return;
-        } else if mafias.is_empty() {
-            self.end_result = Some(crate::game::EndResult::Town);
+        if let Some(end) = self.check_end() {
+            self.end_result = Some(end);
             return;
         }
         if self.day_night_count.is_night {
@@ -59,12 +47,15 @@ impl Game {
         } else {
             self.iterate_day().await;
         }
+        self.check_pause().await;
     }
 
     pub async fn iterate_night(&mut self) {
         let actors = Self::get_nondead_actors();
         self.process_sheriff_turn(&actors).await;
+        self.check_pause().await;
         self.process_doctor_turn(&actors).await;
+        self.check_pause().await;
         self.process_mafia_turn().await;
         self.day_night_count.night_count += 1;
         self.day_night_count.is_night = false;
@@ -78,17 +69,18 @@ impl Game {
             vec![ExtraData::SaidInChannel(Channel::Global)],
         )
         .await;
+        self.check_pause().await; // TODO: Pause in discussion
         self.add_to_context(ContextEntry {
             content: voting_begins().to_string(),
             sayer_type: SayerType::System,
             extra_data: vec![ExtraData::SaidInChannel(Channel::Global)],
         });
-        if let Some(voted_out) = Self::handle_voting(
-            &Self::get_nondead_actors(),
-            &[ExtraData::SaidInChannel(Channel::Global)],
-            self,
-        )
-        .await
+        if let Some(voted_out) = self
+            .handle_voting(
+                &Self::get_nondead_actors(),
+                &[ExtraData::SaidInChannel(Channel::Global)],
+            )
+            .await
         {
             Self::get_actors_mut()[voted_out as usize].dead = true;
             self.add_to_context(ContextEntry {
@@ -177,8 +169,9 @@ impl Game {
             vec![ExtraData::SaidInChannel(Channel::Mafia)],
         )
         .await;
-        if let Some(voted_out) =
-            Self::handle_voting(&mafias, &[ExtraData::SaidInChannel(Channel::Mafia)], self).await
+        if let Some(voted_out) = self
+            .handle_voting(&mafias, &[ExtraData::SaidInChannel(Channel::Mafia)])
+            .await
         {
             let actor = Self::get_actor_from_id(voted_out).unwrap();
             self.add_to_context(ContextEntry {

@@ -1,3 +1,5 @@
+use godot::meta::ToGodot;
+
 use crate::actor::BaseActor;
 use crate::context_entry::{ContextEntry, SayerType};
 use crate::data::action::Action;
@@ -27,21 +29,16 @@ impl Game {
         while let Some(actor_id) = turn_queue.pop_front()
             && core_messages > 0
         {
+            self.check_pause().await;
+
             if turn_queue.is_empty() && core_messages > 0 {
-                let actors: Vec<u8> = Self::get_actors().iter().map(|a| a.id).collect();
-                for actor in actors {
-                    turn_queue.push_back((actor, false));
-                }
+                actors
+                    .iter()
+                    .map(|a| (a.id, false))
+                    .for_each(|item| turn_queue.push_back(item));
             }
 
             let actor = Self::get_actor_from_id(actor_id.0).unwrap();
-
-            godot::global::godot_print!(
-                "Turn: {}. (Before handling action) Core messages: {} Extra messages: {}",
-                actor.name,
-                core_messages,
-                extra_messages
-            );
 
             let action = actor
                 .prompt(
@@ -66,6 +63,13 @@ impl Game {
                 &mut extra_data,
             );
 
+            godot::global::godot_print!(
+                "Turn: {} (Before handling action) Core messages: {} Extra messages: {}",
+                actor.name,
+                core_messages,
+                extra_messages
+            );
+
             if used_core_message {
                 core_messages = core_messages.saturating_sub(1);
             }
@@ -76,6 +80,13 @@ impl Game {
                     core_messages = core_messages.saturating_sub(1);
                 }
             }
+
+            godot::global::godot_print!(
+                "Turn: {} (After handling action) Core messages: {} Extra messages: {}",
+                actor.name,
+                core_messages,
+                extra_messages
+            );
         }
     }
 
@@ -89,15 +100,23 @@ impl Game {
         extra_data: &mut Vec<ExtraData>,
     ) {
         match action {
+            // TODO: Camera focusing and current text setting on other actions
             Action::Talk(content) => {
                 self.add_to_context(ContextEntry {
-                    content,
+                    content: content.clone(),
                     sayer_type: SayerType::Actor(actor_id.0),
                     extra_data: extra_data.clone(),
                 });
                 if !actor_id.1 {
                     *used_core_message = true;
                 }
+                let is_night = self.day_night_count.is_night;
+                self.command_sender
+                    .send(Box::new(move |chat| {
+                        chat.get_current_text().set_text(&content.to_godot());
+                        chat.focus_camera_on_actor(actor_id.0, is_night);
+                    }))
+                    .unwrap();
             }
             Action::Abstain => {
                 self.add_to_context(ContextEntry {
