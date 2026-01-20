@@ -6,7 +6,6 @@ static mut MODEL_POOL: LazyLock<Vec<ModelNameID>> = LazyLock::new(|| {
     vec![ModelNameID {
         model_id: "tngtech/tng-r1t-chimera:free".to_string(),
         display_name: "DeepSeek".to_string(),
-        image_file: None,
     }]
 });
 
@@ -19,7 +18,6 @@ pub fn take_random_model() -> ModelNameID {
         return ModelNameID {
             model_id: "tngtech/tng-r1t-chimera:free".to_string(),
             display_name: name.to_string(),
-            image_file: None,
         };
     }
     let model = pool.iter().choose(&mut rand::rng()).unwrap().clone();
@@ -31,5 +29,4 @@ pub fn take_random_model() -> ModelNameID {
 pub struct ModelNameID {
     pub model_id: String,
     pub display_name: String,
-    pub image_file: Option<godot::obj::Gd<godot::classes::FileAccess>>,
 }

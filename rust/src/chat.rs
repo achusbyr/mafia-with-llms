@@ -97,15 +97,8 @@ impl IControl for Chat {
         {
             self.api_key = text.to_string().trim().to_godot();
         } else {
-            match input_dialogs::Input::new("Enter your API key for the API (OpenRouter/etc.)")
-                .show()
-            {
-                Ok(api_key) => self.api_key = api_key.unwrap().to_godot(),
-                Err(err) => {
-                    godot::global::godot_print!("Error: {}", err);
-                    self.base().get_tree().unwrap().quit();
-                }
-            }
+            rfd::MessageDialog::default().set_title("API_KEY.txt not found").set_description("Please put an API_KEY.txt that has the API key in the same directory as the executable").show();
+            std::process::exit(1);
         }
         crate::llm::ai_interface::CLIENT.get_or_init(|| {
             Client::with_config(
