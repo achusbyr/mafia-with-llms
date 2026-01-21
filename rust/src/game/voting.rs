@@ -1,6 +1,7 @@
 use crate::actor::BaseActor;
-use crate::context_entry::{ContextEntry, SayerType};
+use crate::chat::ChatCommand;
 use crate::data::action::Action;
+use crate::data::context_entry::{ContextEntry, SayerType};
 use crate::data::extra_data::ExtraData;
 use crate::game::Game;
 use crate::llm::tools::Tool;
@@ -47,11 +48,15 @@ impl Game {
                 }
                 _ => {}
             }
+            let text = actor_voted(actor, target_vote, comment);
             self.add_to_context(ContextEntry {
-                content: actor_voted(actor, target_vote, comment),
+                content: text.clone(),
                 sayer_type: SayerType::System,
                 extra_data: extra_data.to_vec(),
             });
+            self.command_sender
+                .send(ChatCommand::CameraFocus(actor.id, text))
+                .unwrap();
         }
         Self::get_voted_out(&votes)
     }

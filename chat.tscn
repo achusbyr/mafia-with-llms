@@ -6,7 +6,7 @@
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_yj8al"]
 draw_center = false
 
-[node name="Chat" type="Chat" unique_id=448122060]
+[node name="Chat" type="Chat" unique_id=1329001079]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -56,6 +56,7 @@ size_flags_horizontal = 3
 size_flags_vertical = 3
 
 [node name="Controls BG" type="PanelContainer" parent="." unique_id=802507853]
+visible = false
 custom_minimum_size = Vector2(500, 125)
 layout_mode = 1
 anchors_preset = 3
@@ -74,7 +75,12 @@ size_flags_vertical = 3
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_stretch_ratio = 5.0
-placeholder_text = "Input here..."
+placeholder_text = "Commands:
+!talk (message)
+!whisper (id) (message)
+!tag (id)
+!provide_id (id)
+!abstain"
 wrap_mode = 1
 
 [node name="Send" type="Button" parent="Controls BG/Controls" unique_id=254882677]

@@ -1,9 +1,8 @@
-use godot::meta::ToGodot;
-
 use crate::actor::BaseActor;
-use crate::context_entry::{ContextEntry, SayerType};
+use crate::chat::ChatCommand;
 use crate::data::action::Action;
 use crate::data::channel::Channel;
+use crate::data::context_entry::{ContextEntry, SayerType};
 use crate::data::extra_data::ExtraData;
 use crate::game::Game;
 use crate::llm::tools::Tool;
@@ -23,8 +22,7 @@ impl Game {
     ) {
         let mut turn_queue: VecDeque<(u8, bool)> = actors.iter().map(|b| (b.id, false)).collect();
 
-        let mut used_core_message = false;
-        let mut used_extra_message = false;
+        let mut used_message = false;
 
         while let Some(actor_id) = turn_queue.pop_front()
             && core_messages > 0
@@ -54,11 +52,10 @@ impl Game {
                 )
                 .await;
 
-            self.handle_action(
+            self.handle_and_focus(
                 actor_id,
                 action,
-                &mut used_core_message,
-                &mut used_extra_message,
+                &mut used_message,
                 &mut turn_queue,
                 &mut extra_data,
             );
@@ -70,10 +67,7 @@ impl Game {
                 extra_messages
             );
 
-            if used_core_message {
-                core_messages = core_messages.saturating_sub(1);
-            }
-            if used_extra_message {
+            if used_message {
                 if extra_messages > 0 {
                     extra_messages = extra_messages.saturating_sub(1);
                 } else {
@@ -90,17 +84,43 @@ impl Game {
         }
     }
 
+    fn handle_and_focus(
+        &mut self,
+        actor_id: (u8, bool),
+        action: Action,
+        used_message: &mut bool,
+        turn_queue: &mut VecDeque<(u8, bool)>,
+        extra_data: &mut Vec<ExtraData>,
+    ) {
+        let mut final_content = String::new();
+        self.handle_action(
+            actor_id,
+            action,
+            used_message,
+            turn_queue,
+            extra_data,
+            &mut final_content,
+        );
+        if !final_content.is_empty() {
+            self.command_sender
+                .send(ChatCommand::CameraFocus(
+                    actor_id.0,
+                    final_content.trim().to_string(),
+                ))
+                .unwrap();
+        }
+    }
+
     fn handle_action(
         &mut self,
         actor_id: (u8, bool),
         action: Action,
-        used_core_message: &mut bool,
-        used_extra_message: &mut bool,
+        used_message: &mut bool,
         turn_queue: &mut VecDeque<(u8, bool)>,
         extra_data: &mut Vec<ExtraData>,
+        final_content: &mut String,
     ) {
         match action {
-            // TODO: Camera focusing and current text setting on other actions
             Action::Talk(content) => {
                 self.add_to_context(ContextEntry {
                     content: content.clone(),
@@ -108,15 +128,9 @@ impl Game {
                     extra_data: extra_data.clone(),
                 });
                 if !actor_id.1 {
-                    *used_core_message = true;
+                    *used_message = true;
                 }
-                let is_night = self.day_night_count.is_night;
-                self.command_sender
-                    .send(Box::new(move |chat| {
-                        chat.get_current_text().set_text(&content.to_godot());
-                        chat.focus_camera_on_actor(actor_id.0, is_night);
-                    }))
-                    .unwrap();
+                final_content.push_str(&format!("{}\n", &content));
             }
             Action::Abstain => {
                 self.add_to_context(ContextEntry {
@@ -124,6 +138,7 @@ impl Game {
                     sayer_type: SayerType::System,
                     extra_data: extra_data.clone(),
                 });
+                final_content.push_str("*Abstained*\n");
             }
             Action::Whisper(to, message) => {
                 let mut extra_data = extra_data.clone();
@@ -131,47 +146,49 @@ impl Game {
                     from: actor_id.0,
                     to,
                 });
+                let from = Self::get_actor_from_id(actor_id.0).unwrap();
+                let target = Self::get_actor_from_id(to).unwrap();
                 self.add_to_context(ContextEntry {
-                    content: public_whisper_notice(
-                        Self::get_actor_from_id(actor_id.0).unwrap(),
-                        Self::get_actor_from_id(to).unwrap(),
-                    ),
+                    content: public_whisper_notice(from, Self::get_actor_from_id(to).unwrap()),
                     sayer_type: SayerType::System,
                     extra_data,
                 });
                 self.add_to_context(ContextEntry {
-                    content: whisperer(Self::get_actor_from_id(to).unwrap(), &message),
+                    content: whisperer(target, &message),
                     sayer_type: SayerType::System,
                     extra_data: vec![ExtraData::SaidInChannel(Channel::ToSelf(actor_id.0))],
                 });
                 self.add_to_context(ContextEntry {
-                    content: whispered(Self::get_actor_from_id(actor_id.0).unwrap(), &message),
+                    content: whispered(from, &message),
                     sayer_type: SayerType::System,
                     extra_data: vec![ExtraData::SaidInChannel(Channel::ToSelf(to))],
                 });
-                *used_extra_message = true;
+                *used_message = true;
+                final_content.push_str(&format!("*Whispered to {}*\n", target.name));
             }
             Action::TagPlayerForComment(target_id) => {
+                let target = Self::get_actor_from_id(target_id).unwrap();
                 self.add_to_context(ContextEntry {
                     content: tagged_for_comment(
                         Self::get_actor_from_id(actor_id.0).unwrap(),
-                        Self::get_actor_from_id(target_id).unwrap(),
+                        target,
                     ),
                     sayer_type: SayerType::System,
                     extra_data: extra_data.clone(),
                 });
                 turn_queue.push_front((target_id, true));
-                *used_extra_message = true;
+                *used_message = true;
+                final_content.push_str(&format!("*Tagged {}*\n", target.name));
             }
             Action::MultiCall(actions) => {
                 for sub_action in actions {
                     self.handle_action(
                         actor_id,
                         sub_action,
-                        used_core_message,
-                        used_extra_message,
+                        used_message,
                         turn_queue,
                         extra_data,
+                        final_content,
                     );
                 }
             }

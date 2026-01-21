@@ -1,8 +1,8 @@
 use crate::actor::BaseActor;
-use crate::context_entry::{ContextEntry, SayerType};
 use crate::data::channel::Channel;
+use crate::data::context_entry::{ContextEntry, SayerType};
 use crate::data::extra_data::ExtraData;
-use crate::game::{ACTOR_COUNT, EXTRA_MESSAGES, Game};
+use crate::game::{EXTRA_MESSAGES, Game};
 use crate::llm::tools::Tool;
 use crate::prompts::general::{actor_was_killed, day_time, night_time, voting_begins, voting_ends};
 use crate::prompts::specific::doctor::{target_protected, you_chose_to_protect};
@@ -34,7 +34,9 @@ impl Game {
                 extra_data: vec![ExtraData::SaidInChannel(Channel::Global)],
             });
         }
-        self.refresh_actor_list();
+        self.command_sender
+            .send(crate::chat::ChatCommand::RefreshActorList)
+            .unwrap();
         for actor in Self::get_actors_mut() {
             actor.extra_data.clear();
         }
@@ -64,12 +66,12 @@ impl Game {
     pub async fn iterate_day(&mut self) {
         self.run_discussion(
             &Self::get_nondead_actors(),
-            ACTOR_COUNT,
+            Self::get_actors().len() as u8,
             EXTRA_MESSAGES,
             vec![ExtraData::SaidInChannel(Channel::Global)],
         )
         .await;
-        self.check_pause().await; // TODO: Pause in discussion
+        self.check_pause().await;
         self.add_to_context(ContextEntry {
             content: voting_begins().to_string(),
             sayer_type: SayerType::System,
@@ -82,7 +84,9 @@ impl Game {
             )
             .await
         {
-            Self::get_actors_mut()[voted_out as usize].dead = true;
+            Self::get_actors_mut()[voted_out as usize]
+                .extra_data
+                .push(ExtraData::Dead);
             self.add_to_context(ContextEntry {
                 content: voting_ends(Some(Self::get_actor_from_id(voted_out).unwrap()), true),
                 sayer_type: SayerType::System,
@@ -190,7 +194,9 @@ impl Game {
                     extra_data: vec![ExtraData::SaidInChannel(Channel::Global)],
                 });
             } else {
-                Self::get_actors_mut()[voted_out as usize].dead = true;
+                Self::get_actors_mut()[voted_out as usize]
+                    .extra_data
+                    .push(ExtraData::Dead);
                 self.last_kill = Some(vec![voted_out]);
             }
         } else {

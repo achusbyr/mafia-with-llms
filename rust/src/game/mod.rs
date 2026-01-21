@@ -6,14 +6,13 @@ mod voting;
 
 use crate::actor::BaseActor;
 use crate::chat::ChatCommand;
-use crate::context_entry::ContextEntry;
+use crate::data::context_entry::ContextEntry;
 use crate::data::roles::RoleAlignment;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::Sender;
 
-const ACTOR_COUNT: u8 = 10;
-const EXTRA_MESSAGES: u8 = 5;
+const EXTRA_MESSAGES: u8 = 7;
 
 static mut ACTORS: Vec<BaseActor> = Vec::new();
 static mut CONTEXT: Vec<ContextEntry> = Vec::new();
@@ -64,6 +63,10 @@ impl Game {
         } else {
             None
         }
+    }
+
+    pub fn send_on_behalf_of_chat(&self, command: ChatCommand) {
+        self.command_sender.send(command).unwrap();
     }
 }
 

@@ -73,7 +73,7 @@ pub fn night_time(night_count: u8) -> String {
 
 pub fn your_turn_to_talk(actor: &BaseActor, core_messages: u8, extra_messages: u8) -> String {
     format!(
-        "It's now your turn to talk. There are currently {} core messages and {} extra messages. Remember: you are {}, a {}.",
+        "It's now your turn to talk. {} core messages and {} extra messages remain. Remember: you are {}, a {}.",
         core_messages,
         extra_messages,
         actor.name,

@@ -1,6 +1,5 @@
 mod actor;
 mod chat;
-pub mod context_entry;
 mod data;
 mod game;
 mod llm;

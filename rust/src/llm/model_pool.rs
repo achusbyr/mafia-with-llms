@@ -2,10 +2,16 @@ use rand::seq::IndexedRandom;
 use rand::seq::IteratorRandom;
 use std::sync::LazyLock;
 
+use crate::actor::ModelCustomization;
+
 static mut MODEL_POOL: LazyLock<Vec<ModelNameID>> = LazyLock::new(|| {
     vec![ModelNameID {
         model_id: "tngtech/tng-r1t-chimera:free".to_string(),
         display_name: "DeepSeek".to_string(),
+        model_customization: ModelCustomization {
+            sprite_path: "res://images/deepseek.png".to_string(),
+            color: godot::builtin::Color::LIGHT_BLUE,
+        },
     }]
 });
 
@@ -18,6 +24,10 @@ pub fn take_random_model() -> ModelNameID {
         return ModelNameID {
             model_id: "tngtech/tng-r1t-chimera:free".to_string(),
             display_name: name.to_string(),
+            model_customization: ModelCustomization {
+                sprite_path: "res://images/openai.png".to_string(),
+                color: godot::builtin::Color::WHITE,
+            },
         };
     }
     let model = pool.iter().choose(&mut rand::rng()).unwrap().clone();
@@ -29,4 +39,5 @@ pub fn take_random_model() -> ModelNameID {
 pub struct ModelNameID {
     pub model_id: String,
     pub display_name: String,
+    pub model_customization: ModelCustomization,
 }

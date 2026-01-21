@@ -1,5 +1,5 @@
 use crate::actor::BaseActor;
-use crate::context_entry::ContextEntry;
+use crate::data::context_entry::ContextEntry;
 use crate::game::{ACTORS, CONTEXT, Game};
 
 #[allow(static_mut_refs)]
@@ -22,13 +22,20 @@ impl Game {
 
     pub fn add_to_context(&mut self, entry: ContextEntry) {
         Self::get_context_mut().push(entry);
-        self.refresh_context_with_actor();
+        self.command_sender
+            .send(crate::chat::ChatCommand::RefreshContextWithActor)
+            .unwrap();
     }
 
     pub fn get_nondead_actors() -> Vec<&'static BaseActor> {
         Self::get_actors()
             .iter()
-            .filter(|actor| !actor.dead)
+            .filter(|actor| {
+                !actor
+                    .extra_data
+                    .iter()
+                    .any(|data| matches!(data, crate::data::extra_data::ExtraData::Dead))
+            })
             .collect()
     }
 
