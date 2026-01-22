@@ -21,16 +21,18 @@ pub struct Game {
     pub command_sender: Sender<ChatCommand>,
     pub end_result: Option<EndResult>,
     pub paused: Arc<AtomicBool>,
+    playable_actor: Option<u8>,
     last_kill: Option<Vec<u8>>,
     day_night_count: DayNightCount,
 }
 
 impl Game {
-    pub fn new(command_sender: Sender<ChatCommand>, paused: Arc<AtomicBool>) -> Self {
+    pub fn new(command_sender: Sender<ChatCommand>, playable_actor: Option<u8>) -> Self {
         Self {
             command_sender,
             end_result: None,
-            paused,
+            paused: Arc::from(AtomicBool::new(false)),
+            playable_actor,
             last_kill: None,
             day_night_count: DayNightCount {
                 day_count: 0,

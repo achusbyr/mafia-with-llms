@@ -2,8 +2,6 @@ use crate::data::channel::Channel;
 use crate::data::context_entry::{ContextEntry, SayerType};
 use crate::data::extra_data::ExtraData;
 use crate::game::Game;
-use async_openai::Client;
-use async_openai::config::OpenAIConfig;
 use godot::classes::{AnimatableBody3D, Camera3D, Control, IControl};
 use godot::prelude::*;
 use std::collections::HashMap;
@@ -21,35 +19,30 @@ pub mod visuals;
 #[class(base = Control)]
 pub struct Chat {
     pub camera: Option<Gd<Camera3D>>,
-    pub command_receiver: Receiver<ChatCommand>,
+    pub command_receiver: Option<Receiver<ChatCommand>>,
     pub player_nodes: HashMap<u8, Gd<AnimatableBody3D>>,
-    pub paused: Arc<AtomicBool>,
     game_iteration: Option<JoinHandle<()>>,
-    game: Arc<Mutex<Game>>,
-    api_key: GString,
+    game: Option<Arc<Mutex<Game>>>,
     base: Base<Control>,
 }
 
 #[godot_api]
 impl IControl for Chat {
     fn init(base: Base<Self::Base>) -> Self {
-        let channel = channel::<ChatCommand>();
-        let paused = Arc::from(AtomicBool::new(false));
-        let paused_clone = Arc::clone(&paused);
         Self {
             camera: None,
-            command_receiver: channel.1,
+            command_receiver: None,
             player_nodes: HashMap::new(),
-            paused,
             game_iteration: None,
-            game: Arc::from(Mutex::from(Game::new(channel.0, paused_clone))),
-            api_key: GString::new(),
+            game: None,
             base,
         }
     }
 
     fn process(&mut self, _delta: f64) {
-        while let Ok(command) = self.command_receiver.try_recv() {
+        while let Some(command_receiver) = &self.command_receiver
+            && let Ok(command) = command_receiver.try_recv()
+        {
             self.handle_command(command);
         }
         if let Some(game_iteration) = &self.game_iteration {
@@ -59,72 +52,97 @@ impl IControl for Chat {
                 return;
             }
         }
-        let game = Arc::clone(&self.game);
-        self.game_iteration = Some(
-            crate::tokio::AsyncRuntime::singleton()
-                .bind()
-                .runtime
-                .spawn(async move {
-                    let mut game = game.lock().await;
-                    if let Some(end_result) = &game.end_result {
-                        Game::get_context_mut().push(ContextEntry {
-                            content: crate::prompts::general::game_end(end_result),
-                            sayer_type: crate::data::context_entry::SayerType::System,
-                            extra_data: vec![ExtraData::SaidInChannel(Channel::Global)],
-                        });
-                        game.send_on_behalf_of_chat(ChatCommand::RefreshContextWithActor);
-                        // TODO: Post game talk
-                        loop {
-                            tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+        if let Some(game) = &self.game {
+            let game = Arc::clone(game);
+            self.game_iteration = Some(
+                crate::tokio::AsyncRuntime::singleton()
+                    .bind()
+                    .runtime
+                    .spawn(async move {
+                        let mut game = game.lock().await;
+                        if let Some(end_result) = &game.end_result {
+                            Game::get_context_mut().push(ContextEntry {
+                                content: crate::prompts::general::game_end(end_result),
+                                sayer_type: crate::data::context_entry::SayerType::System,
+                                extra_data: vec![ExtraData::SaidInChannel(Channel::Global)],
+                            });
+                            game.send_on_behalf_of_chat(ChatCommand::RefreshContextWithActor);
+                            // TODO: Post game talk
+                            loop {
+                                tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+                            }
                         }
-                    }
-                    game.iterate().await
-                }),
-        )
-    }
-
-    fn enter_tree(&mut self) {
-        let api_key_file = godot::classes::FileAccess::open(
-            "res://API_KEY.txt",
-            godot::classes::file_access::ModeFlags::READ,
-        );
-        if let Some(file) = api_key_file
-            && let text = file.get_as_text()
-            && !text.is_empty()
-        {
-            self.api_key = text.to_string().trim().to_godot();
-        } else {
-            rfd::MessageDialog::default().set_title("API_KEY.txt not found").set_description("Please put an API_KEY.txt that has the API key in the same directory as the executable").show();
-            std::process::exit(1);
-        }
-        crate::llm::ai_interface::CLIENT.get_or_init(|| {
-            Client::with_config(
-                OpenAIConfig::default()
-                    .with_api_base(crate::llm::ai_interface::API_URL)
-                    .with_api_key(&self.api_key),
+                        game.iterate().await
+                    }),
             )
-        });
+        }
     }
 
     fn ready(&mut self) {
+        // This whole entire part needs a major cleanup
         self.camera = Some(
             self.get_world()
                 .get_node_as::<godot::classes::Camera3D>("Camera3D"),
         );
-        let game = Arc::clone(&self.game);
-        crate::tokio::AsyncRuntime::singleton()
-            .bind()
-            .runtime
-            .block_on(async {
-                let mut game = game.lock().await;
-                game.before_init(self);
-                game.init_actors(10, self, None);
-                game.init_context(true);
-            });
+        let init_data = unsafe {
+            #[allow(static_mut_refs)]
+            if let Some(config) = crate::configuration::CONFIGURATION.as_ref() {
+                config
+            } else {
+                panic!("Configuration not initialized");
+            }
+        };
+        let actors = {
+            let mut actors = Vec::new();
+            for actor in &init_data.3 {
+                let base_actor = crate::actor::BaseActor {
+                    name: actor.name.clone(),
+                    id: actor.id,
+                    role: actor.role.clone(),
+                    extra_data: actor.extra_data.clone(),
+                    kind: match &actor.kind {
+                        crate::actor::ActorKind::Real => crate::actor::ActorKind::Real,
+                        crate::actor::ActorKind::Llm(ai_interface) => {
+                            crate::actor::ActorKind::Llm(crate::llm::ai_interface::AIInterface {
+                                model_id: ai_interface.model_id.clone(),
+                                owner_id: ai_interface.owner_id,
+                            })
+                        }
+                    },
+                    model_customization: actor.model_customization.clone(),
+                };
+                actors.push(base_actor);
+            }
+            actors
+        };
+        self.initialize(init_data.0, init_data.1.clone(), init_data.2, actors);
     }
 }
 
 impl Chat {
+    pub fn initialize(
+        &mut self,
+        start_at_night: bool,
+        key_url_pair: (String, String),
+        playable_actor: Option<u8>,
+        actors: Vec<crate::actor::BaseActor>,
+    ) {
+        crate::llm::ai_interface::CLIENT.get_or_init(|| {
+            async_openai::Client::with_config(
+                async_openai::config::OpenAIConfig::default()
+                    .with_api_base(key_url_pair.1)
+                    .with_api_key(key_url_pair.0),
+            )
+        });
+        let channel = channel::<ChatCommand>();
+        self.command_receiver = Some(channel.1);
+        let mut game = Game::new(channel.0, playable_actor);
+        game.before_init(self);
+        game.init_actors(actors, self);
+        game.init_context(start_at_night);
+        self.game = Some(Arc::from(Mutex::from(game)));
+    }
+
     pub fn handle_command(&mut self, command: ChatCommand) {
         match command {
             ChatCommand::Closure(mut closure) => closure(self),
@@ -182,6 +200,16 @@ impl Chat {
                     actor_list.add_child(&label);
                 }
             }
+        }
+    }
+
+    pub async fn get_game_pause(&self) -> Arc<AtomicBool> {
+        if let Some(game) = &self.game {
+            let game = Arc::clone(game);
+            let game = game.lock().await;
+            Arc::clone(&game.paused)
+        } else {
+            panic!("No game instance found");
         }
     }
 }

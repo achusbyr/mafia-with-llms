@@ -16,31 +16,8 @@ impl Game {
         chat.setup_menu();
     }
 
-    pub fn init_actors(
-        &mut self,
-        count: u8,
-        chat: &mut Chat,
-        override_actors: Option<Vec<BaseActor>>,
-    ) {
-        if let Some(actors) = override_actors {
-            Self::get_actors_mut().extend(actors);
-        } else {
-            for index in 0..count {
-                let model = crate::llm::model_pool::take_random_model();
-                let actor = BaseActor {
-                    name: model.display_name.clone(),
-                    id: index,
-                    role: crate::data::roles::GameRole::Villager,
-                    extra_data: vec![],
-                    kind: crate::actor::ActorKind::Llm(crate::llm::ai_interface::AIInterface {
-                        model_id: model.model_id,
-                        owner_id: index,
-                    }),
-                    model_customization: model.model_customization,
-                };
-                Self::get_actors_mut().push(actor);
-            }
-        }
+    pub fn init_actors(&mut self, actors: Vec<BaseActor>, chat: &mut Chat) {
+        Self::get_actors_mut().extend(actors);
         Self::get_actors_mut().shuffle(&mut rand::rng());
         let mut role_pool = Vec::new();
         for _ in 0..3 {

@@ -1,5 +1,6 @@
 use std::sync::atomic::Ordering;
 
+use godot::obj::Singleton;
 use godot::{classes::Window, obj::Gd};
 use godot::{
     classes::{Button, Control, Label, MeshInstance3D, Node3D, TextEdit, VBoxContainer},
@@ -39,9 +40,16 @@ impl Chat {
         });
         pause.signals().pressed().connect_self(|button| {
             let chat = button.get_node_as::<crate::chat::Chat>("../../../../..");
-            let paused = std::sync::Arc::clone(&chat.bind().paused);
-            let val = paused.load(Ordering::Relaxed);
-            paused.store(!val, Ordering::Relaxed);
+            let chat = chat.bind();
+            let pause = chat.get_game_pause();
+            crate::tokio::AsyncRuntime::singleton()
+                .bind()
+                .runtime
+                .block_on(async {
+                    let pause = pause.await;
+                    let value = pause.load(Ordering::Relaxed);
+                    pause.store(!value, Ordering::Relaxed);
+                });
             match button.get_text().to_string().as_str() {
                 "Pause" => {
                     button.set_text("Unpause");

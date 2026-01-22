@@ -1,7 +1,6 @@
 [gd_scene format=3 uid="uid://cdejf8x41du13"]
 
-[node name="Configuration" type="Control" unique_id=1293332313]
-layout_mode = 3
+[node name="Configuration" type="Configuration" unique_id=114950029]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -15,3 +14,81 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+
+[node name="Root UI" type="HBoxContainer" parent="." unique_id=1995339187]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Main Controls" type="VBoxContainer" parent="Root UI" unique_id=1885179549]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Start At Night" type="CheckBox" parent="Root UI/Main Controls" unique_id=1260274302]
+layout_mode = 2
+text = "Start At Night"
+
+[node name="API URL" type="LineEdit" parent="Root UI/Main Controls" unique_id=1586629662]
+layout_mode = 2
+text = "https://openrouter.ai/api/v1"
+placeholder_text = "API URL"
+
+[node name="API Key" type="LineEdit" parent="Root UI/Main Controls" unique_id=342037369]
+layout_mode = 2
+placeholder_text = "API Key"
+secret = true
+
+[node name="Padding" type="MarginContainer" parent="Root UI/Main Controls" unique_id=912677960]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/margin_top = 500
+
+[node name="Begin" type="Button" parent="Root UI/Main Controls/Padding" unique_id=932253402]
+layout_mode = 2
+theme_override_font_sizes/font_size = 50
+text = "Begin"
+
+[node name="List Controls" type="VBoxContainer" parent="Root UI" unique_id=1924136185]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Add As Playable" type="CheckBox" parent="Root UI/List Controls" unique_id=1049537194]
+layout_mode = 2
+text = "Add As Playable"
+
+[node name="Add" type="Button" parent="Root UI/List Controls" unique_id=1359818089]
+layout_mode = 2
+text = "Add ->"
+
+[node name="Remove" type="Button" parent="Root UI/List Controls" unique_id=1560936838]
+layout_mode = 2
+text = "Remove <-"
+
+[node name="Selected And Count" type="HBoxContainer" parent="Root UI/List Controls" unique_id=898116389]
+layout_mode = 2
+
+[node name="Selected" type="Label" parent="Root UI/List Controls/Selected And Count" unique_id=1928100836]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Currently Selected: None"
+
+[node name="Count" type="Label" parent="Root UI/List Controls/Selected And Count" unique_id=779818372]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Actors: 0"
+horizontal_alignment = 2
+
+[node name="List BG" type="PanelContainer" parent="Root UI" unique_id=1411004324]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Scroll" type="ScrollContainer" parent="Root UI/List BG" unique_id=596471401]
+layout_mode = 2
+
+[node name="Actor List" type="VBoxContainer" parent="Root UI/List BG/Scroll" unique_id=947877801]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3

@@ -1,3 +1,4 @@
+use crate::configuration::ModelCustomization;
 use crate::data::action::Action;
 use crate::data::extra_data::ExtraData;
 use crate::data::roles::GameRole;
@@ -27,12 +28,6 @@ impl BaseActor {
 pub enum ActorKind {
     Real,
     Llm(AIInterface),
-}
-
-#[derive(Clone)]
-pub struct ModelCustomization {
-    pub sprite_path: String,
-    pub color: godot::builtin::Color,
 }
 
 pub async fn real_prompt(prompt: &str, game: &Game) -> Action {

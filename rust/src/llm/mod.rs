@@ -1,7 +1,6 @@
 use serde::Deserialize;
 
 pub mod ai_interface;
-pub mod model_pool;
 pub mod tools;
 
 #[derive(Deserialize, Debug)]

@@ -13,7 +13,6 @@ use async_openai::types::chat::{
 };
 use std::sync::OnceLock;
 
-pub const API_URL: &str = "https://openrouter.ai/api/v1";
 pub static CLIENT: OnceLock<Client<OpenAIConfig>> = OnceLock::new();
 
 pub struct AIInterface {

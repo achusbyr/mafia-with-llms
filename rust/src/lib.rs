@@ -1,5 +1,6 @@
 mod actor;
 mod chat;
+mod configuration;
 mod data;
 mod game;
 mod llm;

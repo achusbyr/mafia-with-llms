@@ -54,9 +54,20 @@ impl Game {
                 sayer_type: SayerType::System,
                 extra_data: extra_data.to_vec(),
             });
-            self.command_sender
-                .send(ChatCommand::CameraFocus(actor.id, text))
-                .unwrap();
+            if !self.day_night_count.is_night
+                || self.playable_actor.is_some()
+                    && matches!(
+                        Self::get_actor_from_id(self.playable_actor.unwrap())
+                            .unwrap()
+                            .role
+                            .alignment(),
+                        crate::data::roles::RoleAlignment::Mafia
+                    )
+            {
+                self.command_sender
+                    .send(ChatCommand::CameraFocus(actor.id, text))
+                    .unwrap();
+            }
         }
         Self::get_voted_out(&votes)
     }

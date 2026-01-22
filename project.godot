@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="mafia-with-llms"
-run/main_scene="uid://bm1l6wgud0lsj"
+run/main_scene="uid://cdejf8x41du13"
 config/features=PackedStringArray("4.6", "Forward Plus")
 
 [display]
