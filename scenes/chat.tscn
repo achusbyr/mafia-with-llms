@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://c0yxdu4bb272p"]
 
-[ext_resource type="PackedScene" uid="uid://bksb2sjuff4y5" path="res://developer.tscn" id="1_dg5i7"]
-[ext_resource type="PackedScene" uid="uid://blhkc263mfevu" path="res://menu.tscn" id="2_yj8al"]
+[ext_resource type="PackedScene" uid="uid://bksb2sjuff4y5" path="res://scenes/developer.tscn" id="1_dg5i7"]
+[ext_resource type="PackedScene" uid="uid://blhkc263mfevu" path="res://scenes/menu.tscn" id="2_yj8al"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_yj8al"]
 draw_center = false

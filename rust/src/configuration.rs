@@ -2,20 +2,22 @@ use godot::{
     classes::{Button, CheckBox, Control, IControl, Label, LineEdit, VBoxContainer},
     prelude::*,
 };
-use rand::Rng;
+use crate::load_world_scene;
 
-pub static mut CONFIGURATION: Option<(
+pub type Config = (
     bool,
     (String, String),
     Option<u8>,
     Vec<crate::actor::BaseActor>,
-)> = None;
-static mut SELECTED_ENTRY: Option<Gd<ActorEntry>> = None;
+);
+
+pub static mut CONFIGURATION: Option<Config> = None;
 
 #[derive(GodotClass)]
 #[class(base = Control)]
 struct Configuration {
     model_pool: Vec<ModelNameID>,
+    selected_entry: Option<Gd<ActorEntry>>,
     base: Base<Control>,
 }
 
@@ -28,9 +30,10 @@ impl IControl for Configuration {
                 display_name: "DeepSeek".to_string(),
                 model_customization: ModelCustomization {
                     sprite_path: "res://images/deepseek.png".to_string(),
-                    color: godot::builtin::Color::LIGHT_BLUE,
+                    color: Color::LIGHT_BLUE,
                 },
             }],
+            selected_entry: None,
             base,
         }
     }
@@ -48,7 +51,6 @@ impl IControl for Configuration {
         let add_as_playable = self
             .base()
             .get_node_as::<CheckBox>("Root UI/List Controls/Add As Playable");
-        let mut count = self.obtain_count();
         let mut actor_list = self.obtain_actor_list();
         self.base()
             .get_node_as::<Button>("Root UI/List Controls/Add")
@@ -56,11 +58,13 @@ impl IControl for Configuration {
             .pressed()
             .connect_self(move |button| {
                 let mut config = button.get_node_as::<Configuration>("../../..");
-                let model = config.bind_mut().take_random_model();
+                let model = config.bind_mut().take_model();
                 let entry = if add_as_playable.is_pressed() {
                     for existing in actor_list.get_children().iter_shared() {
-                        let entry = existing.get_meta("entry").to::<Gd<ActorEntry>>();
-                        if let ActorBlueprint::Real(..) = entry.bind().actor_blueprint {
+                        let entry = existing.cast::<ActorEntry>();
+                        if let ActorBlueprint::Real(..) =
+                            entry.bind().actor_blueprint.as_ref().unwrap()
+                        {
                             return;
                         }
                     }
@@ -69,32 +73,29 @@ impl IControl for Configuration {
                     construct_entry(ActorBlueprint::Llm(model))
                 };
                 actor_list.add_child(&entry);
-                count.set_text(&format!("Actors: {}", actor_list.get_child_count()));
             });
-        let mut count = self.obtain_count();
         let mut selected = self
             .base()
-            .get_node_as::<Label>("Root UI/List Controls/Selected And Count/Selected");
+            .get_node_as::<Label>("Root UI/List Controls/Selected");
         let actor_list = self.obtain_actor_list();
         self.base()
             .get_node_as::<Button>("Root UI/List Controls/Remove")
             .signals()
             .pressed()
             .connect_self(move |button| {
-                #[allow(static_mut_refs)]
-                let removing_entry = unsafe { &SELECTED_ENTRY };
-                let mut config = button.get_node_as::<Configuration>("../../..");
+                let mut configuration = button.get_node_as::<Configuration>("../../..");
+                let removing_entry = configuration.bind().selected_entry.clone();
                 if let Some(removing_entry) = removing_entry {
                     for mut existing in actor_list.get_children().iter_shared() {
-                        let entry = existing.get_meta("entry").to::<Gd<ActorEntry>>();
-                        if &entry == removing_entry {
+                        let entry = existing.clone().cast::<ActorEntry>();
+                        if entry == removing_entry {
                             existing.queue_free();
-                            count.set_text(&format!("Actors: {}", actor_list.get_child_count()));
                             selected.set_text("Currently Selected: None");
+                            configuration.bind_mut().selected_entry = None;
                             if let ActorBlueprint::Llm(model_name_id) =
-                                &entry.bind().actor_blueprint
+                                entry.bind().actor_blueprint.as_ref().unwrap()
                             {
-                                config.bind_mut().return_model(model_name_id.clone());
+                                configuration.bind_mut().return_model(model_name_id.clone());
                             }
                             break;
                         }
@@ -114,14 +115,14 @@ impl IControl for Configuration {
             .pressed()
             .connect_self(move |config| {
                 let mut tree = config.get_tree().unwrap();
-                tree.change_scene_to_file("res://world.tscn");
+                tree.change_scene_to_packed(&load_world_scene());
                 let mut playable_actor: Option<u8> = None;
                 let actors = {
                     let mut actors = Vec::new();
                     for (index, existing) in actor_list.get_children().iter_shared().enumerate() {
-                        let entry = existing.get_meta("entry").to::<Gd<ActorEntry>>();
+                        let entry = existing.cast::<ActorEntry>();
                         let entry = entry.bind();
-                        match &entry.actor_blueprint {
+                        match entry.actor_blueprint.as_ref().unwrap() {
                             ActorBlueprint::Real(name) => {
                                 actors.push(crate::actor::BaseActor {
                                     name: name.clone(),
@@ -131,7 +132,7 @@ impl IControl for Configuration {
                                     kind: crate::actor::ActorKind::Real,
                                     model_customization: ModelCustomization {
                                         sprite_path: "res://images/user.png".to_string(),
-                                        color: godot::builtin::Color::WHITE,
+                                        color: Color::WHITE,
                                     },
                                 });
                                 playable_actor = Some(index as u8);
@@ -176,23 +177,17 @@ impl Configuration {
             .get_node_as::<VBoxContainer>("Root UI/List BG/Scroll/Actor List")
     }
 
-    fn obtain_count(&self) -> Gd<Label> {
-        self.base()
-            .get_node_as::<Label>("Root UI/List Controls/Selected And Count/Count")
-    }
-
-    pub fn take_random_model(&mut self) -> ModelNameID {
-        // TODO: Fix returned models not reappearing (rework metadata system?)
+    pub fn take_model(&mut self) -> ModelNameID {
         let final_model: ModelNameID;
         if let Some(model) = self.model_pool.pop() {
             final_model = model.clone();
         } else {
             final_model = ModelNameID {
                 model_id: "tngtech/tng-r1t-chimera:free".to_string(),
-                display_name: format!("\"{}\"", rand::rng().random_range(1..100)),
+                display_name: "Use My ID Instead".to_string(),
                 model_customization: ModelCustomization {
                     sprite_path: "res://images/openai.png".to_string(),
-                    color: godot::builtin::Color::WHITE,
+                    color: Color::WHITE,
                 },
             };
         }
@@ -206,40 +201,41 @@ impl Configuration {
     }
 }
 
-fn construct_entry(blueprint: ActorBlueprint) -> Gd<Button> {
-    let mut button = Button::new_alloc();
-    let mut entry = ActorEntry::new_gd();
+fn construct_entry(blueprint: ActorBlueprint) -> Gd<ActorEntry> {
+    let mut entry = ActorEntry::new_alloc();
     let name = match &blueprint {
         ActorBlueprint::Llm(model_name_id) => model_name_id.display_name.clone(),
         ActorBlueprint::Real(name) => format!("{} (Playable)", name),
     };
-    entry.bind_mut().actor_blueprint = blueprint;
-    button.set_meta("entry", &entry.to_variant());
-    button.set_text(&name);
-    button.set_text_alignment(godot::global::HorizontalAlignment::LEFT);
-    button.signals().pressed().connect_self(|label| {
-        let entry = label.get_meta("entry").to::<Gd<ActorEntry>>();
-        let mut selected =
-            label.get_node_as::<Label>("../../../../List Controls/Selected And Count/Selected");
-        selected.set_text(&format!(
-            "Currently Selected: {}",
-            match &entry.bind().actor_blueprint {
-                ActorBlueprint::Llm(model_name_id) => model_name_id.display_name.clone(),
-                ActorBlueprint::Real(name) => name.clone(),
-            }
-        ));
-        unsafe {
-            SELECTED_ENTRY = Some(entry);
-        }
-    });
+    entry.bind_mut().actor_blueprint = Some(blueprint);
+    entry.set_text(&name);
+    entry.set_text_alignment(godot::global::HorizontalAlignment::LEFT);
+    let button = entry.bind();
+    let entry_clone = entry.clone();
     button
+        .base()
+        .signals()
+        .pressed()
+        .connect_self(move |button| {
+            let mut selected = button.get_node_as::<Label>("../../../../List Controls/Selected");
+            selected.set_text(&format!(
+                "Currently Selected: {}",
+                match entry_clone.bind().actor_blueprint.as_ref().unwrap() {
+                    ActorBlueprint::Llm(model_name_id) => model_name_id.display_name.clone(),
+                    ActorBlueprint::Real(name) => name.clone(),
+                }
+            ));
+            let mut configuration = button.get_node_as::<Configuration>("../../../../..");
+            configuration.bind_mut().selected_entry = Some(entry_clone.clone());
+        });
+    entry.clone()
 }
 
 #[derive(GodotClass)]
-#[class(init, base = Resource)]
+#[class(init, base = Button)]
 struct ActorEntry {
-    pub actor_blueprint: ActorBlueprint,
-    base: Base<Resource>,
+    pub actor_blueprint: Option<ActorBlueprint>,
+    base: Base<Button>,
 }
 
 pub enum ActorBlueprint {
@@ -247,13 +243,7 @@ pub enum ActorBlueprint {
     Llm(ModelNameID),
 }
 
-impl std::default::Default for ActorBlueprint {
-    fn default() -> Self {
-        Self::Real("Player".to_string())
-    }
-}
-
-impl std::cmp::PartialEq for ActorBlueprint {
+impl PartialEq for ActorBlueprint {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
             (Self::Real(l0), Self::Real(r0)) => l0 == r0,
@@ -273,5 +263,5 @@ pub struct ModelNameID {
 #[derive(Clone)]
 pub struct ModelCustomization {
     pub sprite_path: String,
-    pub color: godot::builtin::Color,
+    pub color: Color,
 }
