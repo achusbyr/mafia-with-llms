@@ -67,19 +67,10 @@ text = "Add ->"
 layout_mode = 2
 text = "Remove <-"
 
-[node name="Selected And Count" type="HBoxContainer" parent="Root UI/List Controls" unique_id=898116389]
-layout_mode = 2
-
-[node name="Selected" type="Label" parent="Root UI/List Controls/Selected And Count" unique_id=1928100836]
+[node name="Selected" type="Label" parent="Root UI/List Controls" unique_id=1928100836]
 layout_mode = 2
 size_flags_horizontal = 3
 text = "Currently Selected: None"
-
-[node name="Count" type="Label" parent="Root UI/List Controls/Selected And Count" unique_id=779818372]
-layout_mode = 2
-size_flags_horizontal = 3
-text = "Actors: 0"
-horizontal_alignment = 2
 
 [node name="List BG" type="PanelContainer" parent="Root UI" unique_id=1411004324]
 layout_mode = 2

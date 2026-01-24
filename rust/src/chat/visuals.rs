@@ -2,15 +2,14 @@ use std::f64;
 
 use godot::{
     classes::{
-        class_macros::private::virtuals::Os::{real, Vector3}, AnimatableBody3D, Label3D,
-        Sprite3D,
+        AnimatableBody3D, Label3D, Sprite3D,
+        class_macros::private::virtuals::Os::{Vector3, real},
     },
     meta::ToGodot,
-    obj::{NewGd, Singleton, WithBaseField}
-    ,
+    obj::{NewGd, Singleton, WithBaseField},
 };
 
-use crate::{actor::BaseActor, chat::Chat, load_message_scene};
+use crate::{actor::BaseActor, chat::Chat, load_model_scene};
 
 impl Chat {
     pub fn focus_camera_on_actor(&mut self, actor_id: u8) {
@@ -40,7 +39,7 @@ impl Chat {
         let radius = 2.0;
 
         for (index, actor) in actors.iter().enumerate() {
-            let mut instance = load_message_scene().instantiate_as::<AnimatableBody3D>();
+            let mut instance = load_model_scene().instantiate_as::<AnimatableBody3D>();
             let angle = 2.0 * f64::consts::PI / count * (index as f64);
             let offset = Vector3::FORWARD.rotated(Vector3::UP, angle as real) * radius;
             let final_pos = town_center_pos + offset;

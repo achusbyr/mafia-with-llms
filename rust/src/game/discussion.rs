@@ -20,7 +20,7 @@ impl Game {
         mut extra_messages: u8,
         mut extra_data: Vec<ExtraData>,
     ) {
-        let mut turn_queue: VecDeque<(u8, bool)> = actors.iter().map(|b| (b.id, false)).collect();
+        let mut turn_queue: VecDeque<u8> = actors.iter().map(|actor| actor.id).collect();
 
         let mut used_message = false;
 
@@ -32,11 +32,11 @@ impl Game {
             if turn_queue.is_empty() && core_messages > 0 {
                 actors
                     .iter()
-                    .map(|a| (a.id, false))
+                    .map(|actor| actor.id)
                     .for_each(|item| turn_queue.push_back(item));
             }
 
-            let actor = Self::get_actor_from_id(actor_id.0).unwrap();
+            let actor = Self::get_actor_from_id(actor_id).unwrap();
 
             let action = actor
                 .prompt(
@@ -86,10 +86,10 @@ impl Game {
 
     fn handle_and_focus(
         &mut self,
-        actor_id: (u8, bool),
+        actor_id: u8,
         action: Action,
         used_message: &mut bool,
-        turn_queue: &mut VecDeque<(u8, bool)>,
+        turn_queue: &mut VecDeque<u8>,
         extra_data: &mut Vec<ExtraData>,
     ) {
         let mut final_content = String::new();
@@ -104,7 +104,7 @@ impl Game {
         if !final_content.is_empty() {
             self.command_sender
                 .send(ChatCommand::CameraFocus(
-                    actor_id.0,
+                    actor_id,
                     final_content.trim().to_string(),
                 ))
                 .unwrap();
@@ -113,10 +113,10 @@ impl Game {
 
     fn handle_action(
         &mut self,
-        actor_id: (u8, bool),
+        actor_id: u8,
         action: Action,
         used_message: &mut bool,
-        turn_queue: &mut VecDeque<(u8, bool)>,
+        turn_queue: &mut VecDeque<u8>,
         extra_data: &mut Vec<ExtraData>,
         final_content: &mut String,
     ) {
@@ -124,17 +124,15 @@ impl Game {
             Action::Talk(content) => {
                 self.add_to_context(ContextEntry {
                     content: content.clone(),
-                    sayer_type: SayerType::Actor(actor_id.0),
+                    sayer_type: SayerType::Actor(actor_id),
                     extra_data: extra_data.clone(),
                 });
-                if !actor_id.1 {
-                    *used_message = true;
-                }
+                *used_message = true;
                 final_content.push_str(&format!("{}\n", &content));
             }
             Action::Abstain => {
                 self.add_to_context(ContextEntry {
-                    content: abstained_in_discussion(Self::get_actor_from_id(actor_id.0).unwrap()),
+                    content: abstained_in_discussion(Self::get_actor_from_id(actor_id).unwrap()),
                     sayer_type: SayerType::System,
                     extra_data: extra_data.clone(),
                 });
@@ -142,11 +140,8 @@ impl Game {
             }
             Action::Whisper(to, message) => {
                 let mut extra_data = extra_data.clone();
-                extra_data.push(ExtraData::WhisperMetadata {
-                    from: actor_id.0,
-                    to,
-                });
-                let from = Self::get_actor_from_id(actor_id.0).unwrap();
+                extra_data.push(ExtraData::WhisperMetadata { from: actor_id, to });
+                let from = Self::get_actor_from_id(actor_id).unwrap();
                 let target = Self::get_actor_from_id(to).unwrap();
                 self.add_to_context(ContextEntry {
                     content: public_whisper_notice(from, Self::get_actor_from_id(to).unwrap()),
@@ -156,7 +151,7 @@ impl Game {
                 self.add_to_context(ContextEntry {
                     content: whisperer(target, &message),
                     sayer_type: SayerType::System,
-                    extra_data: vec![ExtraData::SaidInChannel(Channel::ToSelf(actor_id.0))],
+                    extra_data: vec![ExtraData::SaidInChannel(Channel::ToSelf(actor_id))],
                 });
                 self.add_to_context(ContextEntry {
                     content: whispered(from, &message),
@@ -169,14 +164,11 @@ impl Game {
             Action::TagPlayerForComment(target_id) => {
                 let target = Self::get_actor_from_id(target_id).unwrap();
                 self.add_to_context(ContextEntry {
-                    content: tagged_for_comment(
-                        Self::get_actor_from_id(actor_id.0).unwrap(),
-                        target,
-                    ),
+                    content: tagged_for_comment(Self::get_actor_from_id(actor_id).unwrap(), target),
                     sayer_type: SayerType::System,
                     extra_data: extra_data.clone(),
                 });
-                turn_queue.push_front((target_id, true));
+                turn_queue.push_front(target_id);
                 *used_message = true;
                 final_content.push_str(&format!("*Tagged {}*\n", target.name));
             }
@@ -195,7 +187,7 @@ impl Game {
             Action::ProvideID(_) => {
                 godot::global::godot_warn!(
                     "{} attempted to use ProvideID in a discussion",
-                    Self::get_actor_from_id(actor_id.0).unwrap().name
+                    Self::get_actor_from_id(actor_id).unwrap().name
                 );
             }
         }
