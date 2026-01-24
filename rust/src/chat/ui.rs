@@ -8,11 +8,13 @@ use godot::{
 };
 
 use crate::chat::Chat;
+use crate::data::context_entry::SayerType;
+use crate::load_message_scene;
 
 impl Chat {
     pub fn setup_menu(&self) {
         self.base()
-            .get_node_as::<godot::classes::Window>("Messages Window")
+            .get_node_as::<Window>("Messages Window")
             .signals()
             .close_requested()
             .connect_self(|window| {
@@ -20,26 +22,23 @@ impl Chat {
             });
         let menu_button = self.get_menu_button();
         let mut menu = self.get_menu();
-        let save = menu.get_node_as::<godot::classes::Button>("Background/Margin/Container/Save");
-        let load = menu.get_node_as::<godot::classes::Button>("Background/Margin/Container/Load");
-        let pause = menu.get_node_as::<godot::classes::Button>("Background/Margin/Container/Pause");
-        let close = menu.get_node_as::<godot::classes::Button>("Background/Margin/Container/Close");
-        let open_messages =
-            menu.get_node_as::<godot::classes::Button>("Background/Margin/Container/Open Messages");
-        let developer_window = menu
-            .get_node_as::<godot::classes::Button>("Background/Margin/Container/Developer Window");
+        let save = menu.get_node_as::<Button>("Background/Margin/Container/Save");
+        let load = menu.get_node_as::<Button>("Background/Margin/Container/Load");
+        let pause = menu.get_node_as::<Button>("Background/Margin/Container/Pause");
+        let close = menu.get_node_as::<Button>("Background/Margin/Container/Close");
+        let open_messages = menu.get_node_as::<Button>("Background/Margin/Container/Open Messages");
+        let developer_window =
+            menu.get_node_as::<Button>("Background/Margin/Container/Developer Window");
         open_messages.signals().pressed().connect_self(|button| {
-            let chat = button.get_node_as::<crate::chat::Chat>("../../../../..");
-            chat.get_node_as::<godot::classes::Window>("Messages Window")
-                .show();
+            let chat = button.get_node_as::<Chat>("../../../../..");
+            chat.get_node_as::<Window>("Messages Window").show();
         });
         developer_window.signals().pressed().connect_self(|button| {
-            let chat = button.get_node_as::<crate::chat::Chat>("../../../../..");
-            chat.get_node_as::<godot::classes::Window>("Developer Window")
-                .show();
+            let chat = button.get_node_as::<Chat>("../../../../..");
+            chat.get_node_as::<Window>("Developer Window").show();
         });
         pause.signals().pressed().connect_self(|button| {
-            let chat = button.get_node_as::<crate::chat::Chat>("../../../../..");
+            let chat = button.get_node_as::<Chat>("../../../../..");
             let chat = chat.bind();
             let pause = chat.get_game_pause();
             crate::tokio::AsyncRuntime::singleton()
@@ -74,7 +73,7 @@ impl Chat {
     #[cfg(feature = "development")]
     pub fn setup_developer_window(&self) {
         self.get_menu()
-            .get_node_as::<godot::classes::Button>("Background/Margin/Container/Developer Window")
+            .get_node_as::<Button>("Background/Margin/Container/Developer Window")
             .show();
         let mut developer_window = self.get_development_window();
         developer_window
@@ -84,7 +83,7 @@ impl Chat {
                 window.hide();
             });
         developer_window.set_visible(true);
-        let developer = developer_window.get_node_as::<godot::classes::Control>("Developer");
+        let developer = developer_window.get_node_as::<Control>("Developer");
         let id_select = developer
             .get_node_as::<godot::classes::OptionButton>("Root UI/Control Panel/ID Select");
         id_select.signals().pressed().connect_self(|button| {
@@ -94,7 +93,7 @@ impl Chat {
             }
         });
         developer
-            .get_node_as::<godot::classes::Button>("Root UI/Control Panel/Build")
+            .get_node_as::<Button>("Root UI/Control Panel/Build")
             .signals()
             .pressed()
             .connect(move || {
@@ -113,17 +112,13 @@ impl Chat {
                         )
                     })
                     .collect::<Vec<_>>();
-                let mut messages = developer
-                    .get_node_as::<godot::classes::VBoxContainer>("Root UI/Scroll/Messages");
+                let mut messages =
+                    developer.get_node_as::<VBoxContainer>("Root UI/Scroll/Messages");
                 for mut existing in messages.get_children().iter_shared() {
                     existing.queue_free();
                 }
-                let message_scene =
-                    godot::tools::load::<godot::classes::PackedScene>("res://message.tscn");
                 for entry in context {
-                    use crate::data::context_entry::SayerType;
-
-                    let message = message_scene.instantiate_as::<godot::classes::Control>();
+                    let message = load_message_scene().instantiate_as::<Control>();
                     match entry.sayer_type {
                         SayerType::Actor(id) => {
                             let actor = crate::game::Game::get_actors()
@@ -131,12 +126,12 @@ impl Chat {
                                 .find(|actor| actor.id == id)
                                 .unwrap();
                             message
-                                .get_node_as::<godot::classes::Label>("Container/Background/Sayer")
+                                .get_node_as::<Label>("Container/Background/Sayer")
                                 .set_text(&format!("{} (ID {})", actor.name, actor.id));
                         }
                         SayerType::System => {
                             message
-                                .get_node_as::<godot::classes::Label>("Container/Background/Sayer")
+                                .get_node_as::<Label>("Container/Background/Sayer")
                                 .set_text("System");
                         }
                     }

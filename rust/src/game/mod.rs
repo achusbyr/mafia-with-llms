@@ -59,9 +59,9 @@ impl Game {
             .filter(|actor| matches!(actor.role.alignment(), RoleAlignment::Mafia))
             .collect::<Vec<_>>();
         if townies.len() == mafias.len() {
-            Some(crate::game::EndResult::Mafia)
+            Some(EndResult::Mafia)
         } else if mafias.is_empty() {
-            Some(crate::game::EndResult::Town)
+            Some(EndResult::Town)
         } else {
             None
         }

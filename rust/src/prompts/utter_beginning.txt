@@ -16,4 +16,4 @@ ProvideID does not consume any messages. MultiCall doesn't consume messages by i
 Extra messages are consumed first, then core messages.
 This means that some players might not be able to get a turn at all if enough actions are taken before they are reached.
 By the way, if you tag a player and that player calls the Talk tool, that Talk tool call instance will NOT consume any messages.
-Also, if you have 1 message left and use a Talk tool and another tool, perhaps a Tag, the discussion will end before the Tagged player takes their turn. Example: You have 1 message left and use both the Talk tool and the Tag tool on another player--however, your use of the Talk tool resulted in 0 messages left, so the discussion ends before the Tagged player can take their turn.
+Also, if you have one message left and use a Talk tool and another tool, perhaps a Tag, the discussion will end before the Tagged player takes their turn. Example: You have one message left and use both the Talk tool and the Tag tool on another player--however, your use of the Talk tool resulted in zero messages left, so the discussion ends before the Tagged player can take their turn.

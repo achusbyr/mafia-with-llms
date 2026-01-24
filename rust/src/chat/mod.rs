@@ -2,6 +2,7 @@ use crate::data::channel::Channel;
 use crate::data::context_entry::{ContextEntry, SayerType};
 use crate::data::extra_data::ExtraData;
 use crate::game::Game;
+use crate::load_message_scene;
 use godot::classes::{AnimatableBody3D, Camera3D, Control, IControl};
 use godot::prelude::*;
 use std::collections::HashMap;
@@ -63,7 +64,7 @@ impl IControl for Chat {
                         if let Some(end_result) = &game.end_result {
                             Game::get_context_mut().push(ContextEntry {
                                 content: crate::prompts::general::game_end(end_result),
-                                sayer_type: crate::data::context_entry::SayerType::System,
+                                sayer_type: SayerType::System,
                                 extra_data: vec![ExtraData::SaidInChannel(Channel::Global)],
                             });
                             game.send_on_behalf_of_chat(ChatCommand::RefreshContextWithActor);
@@ -80,10 +81,7 @@ impl IControl for Chat {
 
     fn ready(&mut self) {
         // This whole entire part needs a major cleanup
-        self.camera = Some(
-            self.get_world()
-                .get_node_as::<godot::classes::Camera3D>("Camera3D"),
-        );
+        self.camera = Some(self.get_world().get_node_as::<Camera3D>("Camera3D"));
         let init_data = unsafe {
             #[allow(static_mut_refs)]
             if let Some(config) = crate::configuration::CONFIGURATION.as_ref() {
@@ -166,10 +164,8 @@ impl Chat {
                 for mut existing in messages.get_children().iter_shared() {
                     existing.queue_free();
                 }
-                let message_scene =
-                    godot::tools::load::<godot::classes::PackedScene>("res://message.tscn");
                 for entry in &context {
-                    let message = message_scene.instantiate_as::<godot::classes::Control>();
+                    let message = load_message_scene().instantiate_as::<Control>();
                     match entry.sayer_type {
                         SayerType::Actor(id) => {
                             let actor = actors.iter().find(|actor| actor.1 == id).unwrap();

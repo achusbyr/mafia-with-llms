@@ -2,15 +2,15 @@ use std::f64;
 
 use godot::{
     classes::{
-        AnimatableBody3D, Label3D, PackedScene, Sprite3D,
-        class_macros::private::virtuals::Os::{Vector3, real},
+        class_macros::private::virtuals::Os::{real, Vector3}, AnimatableBody3D, Label3D,
+        Sprite3D,
     },
     meta::ToGodot,
-    obj::{NewGd, Singleton, WithBaseField},
-    tools::load,
+    obj::{NewGd, Singleton, WithBaseField}
+    ,
 };
 
-use crate::{actor::BaseActor, chat::Chat};
+use crate::{actor::BaseActor, chat::Chat, load_message_scene};
 
 impl Chat {
     pub fn focus_camera_on_actor(&mut self, actor_id: u8) {
@@ -40,8 +40,7 @@ impl Chat {
         let radius = 2.0;
 
         for (index, actor) in actors.iter().enumerate() {
-            let mut instance =
-                load::<PackedScene>("res://models/model.tscn").instantiate_as::<AnimatableBody3D>();
+            let mut instance = load_message_scene().instantiate_as::<AnimatableBody3D>();
             let angle = 2.0 * f64::consts::PI / count * (index as f64);
             let offset = Vector3::FORWARD.rotated(Vector3::UP, angle as real) * radius;
             let final_pos = town_center_pos + offset;
@@ -50,7 +49,7 @@ impl Chat {
                 .call_deferred("add_child", &[instance.clone().to_variant()]);
 
             instance.look_at_from_position(final_pos, town_center_pos);
-            instance.rotate_object_local(Vector3::UP, std::f64::consts::PI as real); // Spin 180
+            instance.rotate_object_local(Vector3::UP, f64::consts::PI as real); // Spin 180
             instance.translate_object_local(Vector3 {
                 x: 0.0,
                 y: 0.4,

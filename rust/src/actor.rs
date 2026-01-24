@@ -4,6 +4,7 @@ use crate::data::extra_data::ExtraData;
 use crate::data::roles::GameRole;
 use crate::game::Game;
 use crate::llm::ai_interface::AIInterface;
+use crate::load_message_scene;
 use async_openai::types::chat::ChatCompletionTools;
 use tokio::sync::mpsc::channel;
 
@@ -37,8 +38,7 @@ pub async fn real_prompt(prompt: &str, game: &Game) -> Action {
     game.command_sender
         .send(crate::chat::ChatCommand::Closure(Box::new(move |chat| {
             let sender = sender.clone();
-            let message = godot::tools::load::<godot::classes::PackedScene>("res://message.tscn")
-                .instantiate_as::<godot::classes::Control>();
+            let message = load_message_scene().instantiate_as::<godot::classes::Control>();
             message
                 .get_node_as::<godot::classes::Label>("Container/Background/Sayer")
                 .set_text("System");

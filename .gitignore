@@ -1,2 +1,5 @@
 .godot
 rust/target
+rust/.idea
+rust/Cargo.lock
+API_KEY.txt

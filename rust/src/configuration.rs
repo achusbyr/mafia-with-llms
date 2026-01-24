@@ -1,8 +1,8 @@
+use crate::load_world_scene;
 use godot::{
     classes::{Button, CheckBox, Control, IControl, Label, LineEdit, VBoxContainer},
     prelude::*,
 };
-use crate::load_world_scene;
 
 pub type Config = (
     bool,
