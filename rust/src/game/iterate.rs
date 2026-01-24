@@ -10,7 +10,6 @@ use crate::prompts::specific::mafia::mafia_discussion_begin;
 
 impl Game {
     pub async fn iterate(&mut self) {
-        self.check_pause().await;
         if self.day_night_count.is_night {
             self.add_to_context(ContextEntry {
                 content: night_time(self.day_night_count.night_count),
@@ -49,15 +48,12 @@ impl Game {
         } else {
             self.iterate_day().await;
         }
-        self.check_pause().await;
     }
 
     pub async fn iterate_night(&mut self) {
         let actors = Self::get_nondead_actors();
         self.process_sheriff_turn(&actors).await;
-        self.check_pause().await;
         self.process_doctor_turn(&actors).await;
-        self.check_pause().await;
         self.process_mafia_turn().await;
         self.day_night_count.night_count += 1;
         self.day_night_count.is_night = false;
@@ -71,7 +67,6 @@ impl Game {
             vec![ExtraData::SaidInChannel(Channel::Global)],
         )
         .await;
-        self.check_pause().await;
         self.add_to_context(ContextEntry {
             content: voting_begins().to_string(),
             sayer_type: SayerType::System,

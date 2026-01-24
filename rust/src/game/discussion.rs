@@ -27,8 +27,6 @@ impl Game {
         while let Some(actor_id) = turn_queue.pop_front()
             && core_messages > 0
         {
-            self.check_pause().await;
-
             if turn_queue.is_empty() && core_messages > 0 {
                 actors
                     .iter()

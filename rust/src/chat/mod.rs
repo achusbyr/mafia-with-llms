@@ -8,7 +8,6 @@ use godot::prelude::*;
 use std::collections::HashMap;
 use std::f64;
 use std::sync::Arc;
-use std::sync::atomic::AtomicBool;
 use std::sync::mpsc::{Receiver, channel};
 use tokio::sync::Mutex;
 use tokio::task::JoinHandle;
@@ -196,16 +195,6 @@ impl Chat {
                     actor_list.add_child(&label);
                 }
             }
-        }
-    }
-
-    pub async fn get_game_pause(&self) -> Arc<AtomicBool> {
-        if let Some(game) = &self.game {
-            let game = Arc::clone(game);
-            let game = game.lock().await;
-            Arc::clone(&game.paused)
-        } else {
-            panic!("No game instance found");
         }
     }
 }

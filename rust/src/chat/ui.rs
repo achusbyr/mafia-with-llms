@@ -1,6 +1,3 @@
-use std::sync::atomic::Ordering;
-
-use godot::obj::Singleton;
 use godot::{classes::Window, obj::Gd};
 use godot::{
     classes::{Button, Control, Label, MeshInstance3D, Node3D, TextEdit, VBoxContainer},
@@ -22,9 +19,6 @@ impl Chat {
             });
         let menu_button = self.get_menu_button();
         let mut menu = self.get_menu();
-        let save = menu.get_node_as::<Button>("Background/Margin/Container/Save");
-        let load = menu.get_node_as::<Button>("Background/Margin/Container/Load");
-        let pause = menu.get_node_as::<Button>("Background/Margin/Container/Pause");
         let close = menu.get_node_as::<Button>("Background/Margin/Container/Close");
         let open_messages = menu.get_node_as::<Button>("Background/Margin/Container/Open Messages");
         let developer_window =
@@ -36,30 +30,6 @@ impl Chat {
         developer_window.signals().pressed().connect_self(|button| {
             let chat = button.get_node_as::<Chat>("../../../../..");
             chat.get_node_as::<Window>("Developer Window").show();
-        });
-        pause.signals().pressed().connect_self(|button| {
-            let chat = button.get_node_as::<Chat>("../../../../..");
-            let chat = chat.bind();
-            let pause = chat.get_game_pause();
-            crate::tokio::AsyncRuntime::singleton()
-                .bind()
-                .runtime
-                .block_on(async {
-                    let pause = pause.await;
-                    let value = pause.load(Ordering::Relaxed);
-                    pause.store(!value, Ordering::Relaxed);
-                });
-            match button.get_text().to_string().as_str() {
-                "Pause" => {
-                    button.set_text("Unpause");
-                }
-                "Unpause" => {
-                    button.set_text("Pause");
-                }
-                _ => {
-                    godot::global::godot_error!("Invalid pause button text!");
-                }
-            }
         });
         close.signals().pressed().connect(move || {
             menu.hide();

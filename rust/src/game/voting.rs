@@ -16,7 +16,6 @@ impl Game {
     ) -> Option<u8> {
         let mut votes = Vec::new();
         for actor in actors {
-            self.check_pause().await;
             let pick = actor
                 .prompt(
                     time_to_vote(),

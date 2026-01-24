@@ -33,22 +33,10 @@ theme_override_constants/margin_bottom = 5
 [node name="Container" type="VBoxContainer" parent="Background/Margin" unique_id=449520328]
 layout_mode = 2
 
-[node name="Pause" type="Button" parent="Background/Margin/Container" unique_id=124216308]
-layout_mode = 2
-text = "Pause"
-
 [node name="Open Messages" type="Button" parent="Background/Margin/Container" unique_id=1918741889]
 layout_mode = 2
 text = "Open Messages
 "
-
-[node name="Save" type="Button" parent="Background/Margin/Container" unique_id=2076078421]
-layout_mode = 2
-text = "Save"
-
-[node name="Load" type="Button" parent="Background/Margin/Container" unique_id=1418197250]
-layout_mode = 2
-text = "Load"
 
 [node name="Close" type="Button" parent="Background/Margin/Container" unique_id=1987012358]
 layout_mode = 2
